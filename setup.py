@@ -8,6 +8,6 @@ setup(
     packages=find_packages(),
     entry_points="""
      [console_scripts]
-     rogue=rogue.cli.cli:cli
+     rogue=rogue.cli.rogue:rogue
     """,
 )
