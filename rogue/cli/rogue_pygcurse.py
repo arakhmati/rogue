@@ -3,7 +3,7 @@ import pathlib
 import pygame
 from toolz import first
 
-from rogue.serialization.loaders import load_rogue_entities_and_components_from_input_yaml
+from rogue.io.loaders import load_rogue_entities_and_components_from_input_yaml
 from rogue.ecs import (
     add_system,
     add_component,
