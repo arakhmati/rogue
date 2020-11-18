@@ -22,5 +22,6 @@ install:
 # command to run tests
 script:
   - conda activate rogue
+  - pip install -e . -v
   - tools/run_linters_and_formatters.sh
   - pytest
