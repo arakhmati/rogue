@@ -1,25 +1,31 @@
 """
-Rogue-specific functions
+Rogue-specific query functions
 """
 
-from collections.abc import Iterable
-import typing
-
-from rogue.constants import ENEMY_ENTITY_TYPES
-from rogue.types import Entity, EntityComponentSystem, TypeComponent
-from rogue.ecs import get_component_of_entity
+from rogue.types import Entity, EntityComponentSystem
+from rogue.ecs import get_components_of_entity
 
 
-def is_of_type(
-    ecs: EntityComponentSystem, entity: Entity, entity_type: typing.Union[str, typing.Iterable[str]]
-) -> bool:
-    if not isinstance(entity_type, Iterable):
-        entity_type = (entity_type,)
+def is_of_type(ecs: EntityComponentSystem, entity: Entity, entity_type: str) -> bool:
 
-    type_component = typing.cast(
-        TypeComponent, get_component_of_entity(ecs=ecs, entity=entity, component_type=TypeComponent)
-    )
-    return type_component.entity_type in entity_type
+    entity_components = get_components_of_entity(ecs=ecs, entity=entity)
+
+    if entity_type == "hero":
+        return set(entity_components.keys()) == {
+            "AppearanceComponent",
+            "PositionComponent",
+            "VelocityComponent",
+            "MoneyComponent",
+            "HealthComponent",
+        }
+    if entity_type == "enemy":
+        return set(entity_components.keys()) == {
+            "AppearanceComponent",
+            "PositionComponent",
+            "VelocityComponent",
+            "HealthComponent",
+        }
+    return False
 
 
 def is_hero(ecs: EntityComponentSystem, entity: Entity) -> bool:
@@ -27,4 +33,4 @@ def is_hero(ecs: EntityComponentSystem, entity: Entity) -> bool:
 
 
 def is_enemy(ecs: EntityComponentSystem, entity: Entity) -> bool:
-    return is_of_type(ecs=ecs, entity=entity, entity_type=ENEMY_ENTITY_TYPES)
+    return is_of_type(ecs=ecs, entity=entity, entity_type="enemy")

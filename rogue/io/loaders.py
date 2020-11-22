@@ -6,12 +6,14 @@ import typing
 from loguru import logger
 import yaml
 
-from rogue.types import EntityComponentSystem
+from rogue.types import EntityComponentSystem, Component
 from rogue.components import (
-    create_type_component,
     create_position_component,
     create_size_component,
     create_apperance_component,
+    create_velocity_component,
+    create_money_component,
+    create_health_component,
 )
 from rogue.ecs import create_ecs, add_entity
 
@@ -69,17 +71,21 @@ def load_rogue_entities_and_components_from_input_yaml(input_file_name: pathlib.
             components=[
                 create_position_component(**room_coordinates),
                 create_size_component(**_parse_size(room["size"])),
-                create_type_component(entity_type="room"),
             ],
         )
         for item in room["items"]:
-            ecs, _ = add_entity(
-                ecs=ecs,
-                components=[
-                    create_position_component(**_parse_coordinates(item["coordinates"], **room_coordinates)),
-                    create_apperance_component(**_type_to_appearance(item["type"])),
-                    create_type_component(entity_type=item["type"]),
-                ],
-            )
+            components: typing.List[Component] = [
+                create_position_component(**_parse_coordinates(item["coordinates"], **room_coordinates)),
+                create_apperance_component(**_type_to_appearance(item["type"])),
+            ]
+            if item["type"] == "hero":
+                components.append(create_velocity_component(y_axis=0, x_axis=0))
+                components.append(create_health_component(amount=100))
+                components.append(create_money_component(amount=0))
+            elif item["type"] in {"hobgoblin"}:
+                components.append(create_velocity_component(y_axis=0, x_axis=0))
+                components.append(create_health_component(amount=100))
+
+            ecs, _ = add_entity(ecs=ecs, components=components)
 
     return ecs

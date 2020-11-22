@@ -5,21 +5,13 @@ import pyrsistent.typing
 
 import pygcurse
 
-# Entity
+
 @attr.s(frozen=True, kw_only=True)
 class Entity:
     unique_id: int = attr.ib()
 
 
-# Entity End
-
-
 # Components
-@attr.s(frozen=True, kw_only=True)
-class TypeComponent:
-    entity_type: str = attr.ib()
-
-
 @attr.s(frozen=True, kw_only=True)
 class PositionComponent:
     y_axis: int = attr.ib()
@@ -46,12 +38,12 @@ class AppearanceComponent:
 
 @attr.s(frozen=True, kw_only=True)
 class MoneyComponent:
-    value: int = attr.ib()
+    amount: int = attr.ib()
 
 
 @attr.s(frozen=True, kw_only=True)
 class HealthComponent:
-    health: int = attr.ib()
+    amount: int = attr.ib()
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -60,7 +52,6 @@ class DamageComponent:
 
 
 Component = typing.Union[
-    TypeComponent,
     PositionComponent,
     VelocityComponent,
     SizeComponent,
