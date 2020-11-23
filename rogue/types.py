@@ -11,58 +11,7 @@ class Entity:
     unique_id: int = attr.ib()
 
 
-# Components
-@attr.s(frozen=True, kw_only=True)
-class PositionComponent:
-    y_axis: int = attr.ib()
-    x_axis: int = attr.ib()
-
-
-@attr.s(frozen=True, kw_only=True)
-class VelocityComponent:
-    x_axis: int = attr.ib()
-    y_axis: int = attr.ib()
-
-
-@attr.s(frozen=True, kw_only=True)
-class SizeComponent:
-    height: int = attr.ib()
-    width: int = attr.ib()
-
-
-@attr.s(frozen=True, kw_only=True)
-class AppearanceComponent:
-    symbol: str = attr.ib()
-    color: str = attr.ib()
-
-
-@attr.s(frozen=True, kw_only=True)
-class MoneyComponent:
-    amount: int = attr.ib()
-
-
-@attr.s(frozen=True, kw_only=True)
-class HealthComponent:
-    amount: int = attr.ib()
-
-
-@attr.s(frozen=True, kw_only=True)
-class DamageComponent:
-    damage: int = attr.ib()
-
-
-Component = typing.Union[
-    PositionComponent,
-    VelocityComponent,
-    SizeComponent,
-    AppearanceComponent,
-    MoneyComponent,
-    HealthComponent,
-    DamageComponent,
-]
-
-
-# Components End
+ComponentTemplate = typing.TypeVar("ComponentTemplate")
 
 
 # Systems
@@ -88,8 +37,8 @@ System = typing.Union[PygcurseRenderSystem, MovementSystem, EnemyAISystem]
 # Type Definitions
 SetOfEntities = pyrsistent.typing.PSet[Entity]
 
-IterableOfComponents = typing.Iterable[Component]
-SetOfComponents = pyrsistent.typing.PSet[Component]
+IterableOfComponents = typing.Iterable[ComponentTemplate]
+SetOfComponents = pyrsistent.typing.PSet[ComponentTemplate]
 
 SetOfSystems = pyrsistent.typing.PSet[System]
 
@@ -101,15 +50,19 @@ Priority = int
 # EntityComponentSystem
 
 ComponentStr = str
-MapFromComponentStrToComponent = pyrsistent.typing.PMap[ComponentStr, Component]
-MapFromEntityToMapFromComponentStrToComponent = pyrsistent.typing.PMap[Entity, MapFromComponentStrToComponent]
+MapFromComponentStrToComponent = pyrsistent.typing.PMap[ComponentStr, ComponentTemplate]
+MapFromEntityToMapFromComponentStrToComponent = pyrsistent.typing.PMap[
+    Entity, MapFromComponentStrToComponent[ComponentTemplate]
+]
 MapFromComponentToSetOfEntities = pyrsistent.typing.PMap[ComponentStr, SetOfEntities]
 MapFromPriorityToSetOfSystems = pyrsistent.typing.PMap[Priority, SetOfSystems]
 
 
-class EntityComponentSystem(pyrsistent.PClass):
+class EntityComponentSystem(typing.Generic[ComponentTemplate], pyrsistent.PClass):
     _last_unique_id: int = pyrsistent.field(mandatory=True)
-    _entities: MapFromEntityToMapFromComponentStrToComponent = pyrsistent.field(initial=pyrsistent.pmap)
+    _entities: MapFromEntityToMapFromComponentStrToComponent[ComponentTemplate] = pyrsistent.field(
+        initial=pyrsistent.pmap
+    )
     _components: MapFromComponentToSetOfEntities = pyrsistent.field(initial=pyrsistent.pmap)
     _systems: MapFromPriorityToSetOfSystems = pyrsistent.field(initial=pyrsistent.pmap)
 
@@ -119,7 +72,7 @@ class EntityComponentSystem(pyrsistent.PClass):
 
 # Others
 class QueryFunction(typing.Protocol):
-    def __call__(self, ecs: EntityComponentSystem, entity: Entity) -> bool:
+    def __call__(self, ecs: EntityComponentSystem[ComponentTemplate], entity: Entity) -> bool:
         ...
 
 

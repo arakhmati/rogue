@@ -17,3 +17,6 @@ def evolve(instance: InstanceType, **changes: typing.Any) -> InstanceType:
 
 def type_to_str(klass: typing.Type[typing.Any]) -> str:
     return klass.__name__
+
+
+TemplateClass = typing.TypeVar("TemplateClass")

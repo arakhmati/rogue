@@ -1,13 +1,59 @@
-from rogue.types import (
+import typing
+
+import attr
+
+
+@attr.s(frozen=True, kw_only=True)
+class PositionComponent:
+    y_axis: int = attr.ib()
+    x_axis: int = attr.ib()
+
+
+@attr.s(frozen=True, kw_only=True)
+class VelocityComponent:
+    x_axis: int = attr.ib()
+    y_axis: int = attr.ib()
+
+
+@attr.s(frozen=True, kw_only=True)
+class SizeComponent:
+    height: int = attr.ib()
+    width: int = attr.ib()
+
+
+@attr.s(frozen=True, kw_only=True)
+class AppearanceComponent:
+    symbol: str = attr.ib()
+    color: str = attr.ib()
+
+
+@attr.s(frozen=True, kw_only=True)
+class MoneyComponent:
+    amount: int = attr.ib()
+
+
+@attr.s(frozen=True, kw_only=True)
+class HealthComponent:
+    amount: int = attr.ib()
+
+
+@attr.s(frozen=True, kw_only=True)
+class DamageComponent:
+    damage: int = attr.ib()
+
+
+RogueComponentUnion = typing.Union[
     PositionComponent,
     VelocityComponent,
     SizeComponent,
     AppearanceComponent,
     MoneyComponent,
     HealthComponent,
-)
+    DamageComponent,
+]
 
 
+# Create functions
 def create_position_component(*, y_axis: int, x_axis: int) -> PositionComponent:
     return PositionComponent(y_axis=y_axis, x_axis=x_axis)
 

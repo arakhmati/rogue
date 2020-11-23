@@ -6,8 +6,9 @@ import typing
 from loguru import logger
 import yaml
 
-from rogue.types import EntityComponentSystem, Component
+from rogue.types import EntityComponentSystem
 from rogue.components import (
+    RogueComponentUnion,
     create_position_component,
     create_size_component,
     create_apperance_component,
@@ -56,25 +57,25 @@ def _type_to_appearance(item_type: str) -> typing.Dict[str, str]:
     }
 
 
-def load_rogue_entities_and_components_from_input_yaml(input_file_name: pathlib.Path) -> EntityComponentSystem:
+def load_rogue_entities_and_components_from_input_yaml(
+    input_file_name: pathlib.Path,
+) -> EntityComponentSystem[RogueComponentUnion]:
 
     logger.info(f"Input file: {input_file_name}")
 
     room_config = _load_room_config(input_file_name=input_file_name)
     logger.info(f"Room Config: {pprint.pformat(room_config)}")
 
-    ecs = create_ecs()
+    ecs: EntityComponentSystem[RogueComponentUnion] = create_ecs()
     for room in room_config:
         room_coordinates = _parse_coordinates(room["coordinates"])
-        ecs, _ = add_entity(
-            ecs=ecs,
-            components=[
-                create_position_component(**room_coordinates),
-                create_size_component(**_parse_size(room["size"])),
-            ],
-        )
+        room_components: typing.List[RogueComponentUnion] = [
+            create_position_component(**room_coordinates),
+            create_size_component(**_parse_size(room["size"])),
+        ]
+        ecs, _ = add_entity(ecs=ecs, components=room_components,)
         for item in room["items"]:
-            components: typing.List[Component] = [
+            components: typing.List[RogueComponentUnion] = [
                 create_position_component(**_parse_coordinates(item["coordinates"], **room_coordinates)),
                 create_apperance_component(**_type_to_appearance(item["type"])),
             ]

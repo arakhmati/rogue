@@ -1,4 +1,5 @@
 import random
+import typing
 
 import pygcurse
 
@@ -6,16 +7,18 @@ from rogue.generic import evolve
 from rogue.query_functions import is_enemy
 from rogue.types import (
     EntityComponentSystem,
-    # Components
-    PositionComponent,
-    VelocityComponent,
-    AppearanceComponent,
-    SizeComponent,
     # Systems
     System,
     PygcurseRenderSystem,
     MovementSystem,
     EnemyAISystem,
+)
+from rogue.components import (
+    RogueComponentUnion,
+    PositionComponent,
+    VelocityComponent,
+    AppearanceComponent,
+    SizeComponent,
 )
 from rogue.ecs import (
     add_component,
@@ -41,12 +44,20 @@ def create_enemy_ai_system() -> EnemyAISystem:
     return EnemyAISystem()
 
 
-def process_pygcurse_render_system(*, system: PygcurseRenderSystem, ecs: EntityComponentSystem) -> None:
+def process_pygcurse_render_system(
+    *, system: PygcurseRenderSystem, ecs: EntityComponentSystem[RogueComponentUnion]
+) -> None:
     for entity in get_entities(ecs=ecs):
-        position_component = get_component_of_entity(ecs=ecs, entity=entity, component_type=PositionComponent)
+        position_component = typing.cast(
+            typing.Optional[PositionComponent],
+            get_component_of_entity(ecs=ecs, entity=entity, component_type=PositionComponent),
+        )
         assert position_component is not None
 
-        size_component = get_component_of_entity(ecs=ecs, entity=entity, component_type=SizeComponent)
+        size_component = typing.cast(
+            typing.Optional[SizeComponent],
+            get_component_of_entity(ecs=ecs, entity=entity, component_type=SizeComponent),
+        )
         if size_component is not None:
 
             height, width = size_component.height, size_component.width
@@ -77,10 +88,17 @@ def process_pygcurse_render_system(*, system: PygcurseRenderSystem, ecs: EntityC
             system.window.fill(char=".", region=(x_axis, y_axis, width - 1, height - 1), fgcolor="grey")
 
     for entity in get_entities(ecs=ecs):
-        position_component = get_component_of_entity(ecs=ecs, entity=entity, component_type=PositionComponent)
+
+        position_component = typing.cast(
+            typing.Optional[PositionComponent],
+            get_component_of_entity(ecs=ecs, entity=entity, component_type=PositionComponent),
+        )
         assert position_component is not None
 
-        appearance_component = get_component_of_entity(ecs=ecs, entity=entity, component_type=AppearanceComponent)
+        appearance_component = typing.cast(
+            typing.Optional[AppearanceComponent],
+            get_component_of_entity(ecs=ecs, entity=entity, component_type=AppearanceComponent),
+        )
         if appearance_component is not None:
             system.window.putchar(
                 appearance_component.symbol,
@@ -90,14 +108,23 @@ def process_pygcurse_render_system(*, system: PygcurseRenderSystem, ecs: EntityC
             )
 
 
-def process_movement_system(*, system: MovementSystem, ecs: EntityComponentSystem) -> EntityComponentSystem:
+def process_movement_system(
+    *, system: MovementSystem, ecs: EntityComponentSystem[RogueComponentUnion]
+) -> EntityComponentSystem[RogueComponentUnion]:
     assert system  # Hack to make 'system' variable marked as used
 
     for entity in get_entities_with_component(ecs=ecs, component_type=VelocityComponent):
-        position_component = get_component_of_entity(ecs=ecs, entity=entity, component_type=PositionComponent)
+
+        position_component = typing.cast(
+            typing.Optional[PositionComponent],
+            get_component_of_entity(ecs=ecs, entity=entity, component_type=PositionComponent),
+        )
         assert position_component is not None
 
-        velocity_component = get_component_of_entity(ecs=ecs, entity=entity, component_type=VelocityComponent)
+        velocity_component = typing.cast(
+            typing.Optional[VelocityComponent],
+            get_component_of_entity(ecs=ecs, entity=entity, component_type=VelocityComponent),
+        )
         assert velocity_component is not None
 
         y_axis = position_component.y_axis + velocity_component.y_axis
@@ -117,7 +144,9 @@ RANDOM_VALUE_TO_YX = {
 }
 
 
-def process_enemy_ai_system(*, system: EnemyAISystem, ecs: EntityComponentSystem) -> EntityComponentSystem:
+def process_enemy_ai_system(
+    *, system: EnemyAISystem, ecs: EntityComponentSystem[RogueComponentUnion]
+) -> EntityComponentSystem[RogueComponentUnion]:
     assert system  # Hack to make 'system' variable marked as used
 
     for entity in query_entities(ecs=ecs, query_function=is_enemy):
@@ -130,7 +159,9 @@ def process_enemy_ai_system(*, system: EnemyAISystem, ecs: EntityComponentSystem
     return ecs
 
 
-def process_system(*, system: System, ecs: EntityComponentSystem) -> EntityComponentSystem:
+def process_system(
+    *, system: System, ecs: EntityComponentSystem[RogueComponentUnion]
+) -> EntityComponentSystem[RogueComponentUnion]:
     if isinstance(system, PygcurseRenderSystem):
         process_pygcurse_render_system(system=system, ecs=ecs)
     elif isinstance(system, MovementSystem):
@@ -142,7 +173,7 @@ def process_system(*, system: System, ecs: EntityComponentSystem) -> EntityCompo
     return ecs
 
 
-def process_ecs(*, ecs: EntityComponentSystem) -> EntityComponentSystem:
+def process_ecs(*, ecs: EntityComponentSystem[RogueComponentUnion]) -> EntityComponentSystem[RogueComponentUnion]:
     for system in get_systems(ecs=ecs):
         ecs = process_system(system=system, ecs=ecs)
     return ecs
