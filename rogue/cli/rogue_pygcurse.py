@@ -4,7 +4,7 @@ import pygame
 from toolz import first
 
 from rogue.io.loaders import load_rogue_ecdb_from_input_yaml
-from rogue.ecs import (
+from rogue.generic.ecs import (
     add_system,
     add_component,
     query_entities,

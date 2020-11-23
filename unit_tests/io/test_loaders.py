@@ -2,7 +2,7 @@ import pathlib
 
 from pyrsistent import pmap, pset
 
-from rogue.ecs import (
+from rogue.generic.ecs import (
     EntityComponentDatabase,
     Entity,
 )

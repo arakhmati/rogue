@@ -10,7 +10,7 @@ import typing
 import attr
 import pyrsistent.typing
 
-from rogue.generic import type_to_str
+from rogue.generic.functions import type_to_str
 
 
 @attr.s(frozen=True, kw_only=True)

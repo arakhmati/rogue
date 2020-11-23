@@ -4,9 +4,9 @@ import typing
 import attr
 import pygcurse
 
-from rogue.generic import evolve
+from rogue.generic.functions import evolve
 from rogue.query_functions import is_enemy
-from rogue.ecs import (
+from rogue.generic.ecs import (
     EntityComponentDatabase,
     Systems,
     add_component,

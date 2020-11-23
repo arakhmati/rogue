@@ -2,8 +2,8 @@
 Rogue-specific query functions
 """
 
-from rogue.ecs import Entity, EntityComponentDatabase, ComponentTemplate
-from rogue.ecs import get_components_of_entity
+from rogue.generic.ecs import Entity, EntityComponentDatabase, ComponentTemplate
+from rogue.generic.ecs import get_components_of_entity
 
 
 def is_of_type(ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, entity_type: str) -> bool:
