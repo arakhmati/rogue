@@ -3,7 +3,7 @@ import pathlib
 from pyrsistent import pmap, pset
 
 from rogue.ecs import (
-    EntityComponentSystem,
+    EntityComponentDatabase,
     Entity,
 )
 from rogue.components import (
@@ -14,13 +14,11 @@ from rogue.components import (
     create_health_component,
     create_money_component,
 )
-from rogue.io.loaders import load_rogue_entities_and_components_from_input_yaml
+from rogue.io.loaders import load_rogue_ecdb_from_input_yaml
 
 
-def test_load_rogue_entities_and_components_from_input_yaml(
-    input_file_name=pathlib.Path("configs") / "sample_room_config.yaml",
-):
-    expected_ecs = EntityComponentSystem(
+def test_load_rogue_ecdb_from_input_yaml(input_file_name=pathlib.Path("configs") / "sample_room_config.yaml",):
+    expected_ecdb = EntityComponentDatabase(
         _last_unique_id=8,
         _entities=pmap(
             {
@@ -112,6 +110,6 @@ def test_load_rogue_entities_and_components_from_input_yaml(
         ),
     )
 
-    ecs = load_rogue_entities_and_components_from_input_yaml(input_file_name)
+    ecdb = load_rogue_ecdb_from_input_yaml(input_file_name)
 
-    assert ecs == expected_ecs
+    assert ecdb == expected_ecdb

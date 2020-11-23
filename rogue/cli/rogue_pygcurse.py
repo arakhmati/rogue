@@ -3,7 +3,7 @@ import pathlib
 import pygame
 from toolz import first
 
-from rogue.io.loaders import load_rogue_entities_and_components_from_input_yaml
+from rogue.io.loaders import load_rogue_ecdb_from_input_yaml
 from rogue.ecs import (
     add_system,
     add_component,
@@ -25,7 +25,7 @@ from rogue.query_functions import is_hero
 
 def rogue_pygcurse(*, input_file_name: pathlib.Path, window_height: int, window_width: int) -> None:
 
-    ecs = load_rogue_entities_and_components_from_input_yaml(input_file_name=input_file_name)
+    ecdb = load_rogue_ecdb_from_input_yaml(input_file_name=input_file_name)
 
     systems: Systems[SystemUnion] = create_systems()
     systems = add_system(systems=systems, priority=0, system=create_enemy_ai_system())
@@ -34,7 +34,7 @@ def rogue_pygcurse(*, input_file_name: pathlib.Path, window_height: int, window_
         systems=systems, priority=2, system=create_pygcurse_render_system(height=window_height, width=window_width)
     )
 
-    hero = first(query_entities(ecs=ecs, query_function=is_hero))
+    hero = first(query_entities(ecdb=ecdb, query_function=is_hero))
 
     while True:
         for event in pygame.event.get():
@@ -60,9 +60,9 @@ def rogue_pygcurse(*, input_file_name: pathlib.Path, window_height: int, window_
                 else:
                     continue
 
-                ecs = add_component(
-                    ecs=ecs,
+                ecdb = add_component(
+                    ecdb=ecdb,
                     entity=hero,
                     component=create_velocity_component(y_axis=hero_velocity_y, x_axis=hero_velocity_x),
                 )
-                ecs = process_systems(ecs=ecs, systems=systems)
+                ecdb = process_systems(ecdb=ecdb, systems=systems)

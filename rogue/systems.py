@@ -6,21 +6,22 @@ import pygcurse
 
 from rogue.generic import evolve
 from rogue.query_functions import is_enemy
-from rogue.ecs import EntityComponentSystem, Systems
-from rogue.components import (
-    RogueComponentUnion,
-    PositionComponent,
-    VelocityComponent,
-    AppearanceComponent,
-    SizeComponent,
-)
 from rogue.ecs import (
+    EntityComponentDatabase,
+    Systems,
     add_component,
     get_component_of_entity,
     get_entities,
     get_entities_with_component,
     query_entities,
     get_systems,
+)
+from rogue.components import (
+    RogueComponentUnion,
+    PositionComponent,
+    VelocityComponent,
+    AppearanceComponent,
+    SizeComponent,
 )
 from rogue.components import create_velocity_component
 
@@ -59,18 +60,18 @@ def create_enemy_ai_system() -> EnemyAISystem:
 
 
 def process_pygcurse_render_system(
-    *, system: PygcurseRenderSystem, ecs: EntityComponentSystem[RogueComponentUnion]
+    *, system: PygcurseRenderSystem, ecdb: EntityComponentDatabase[RogueComponentUnion]
 ) -> None:
-    for entity in get_entities(ecs=ecs):
+    for entity in get_entities(ecdb=ecdb):
         position_component = typing.cast(
             typing.Optional[PositionComponent],
-            get_component_of_entity(ecs=ecs, entity=entity, component_type=PositionComponent),
+            get_component_of_entity(ecdb=ecdb, entity=entity, component_type=PositionComponent),
         )
         assert position_component is not None
 
         size_component = typing.cast(
             typing.Optional[SizeComponent],
-            get_component_of_entity(ecs=ecs, entity=entity, component_type=SizeComponent),
+            get_component_of_entity(ecdb=ecdb, entity=entity, component_type=SizeComponent),
         )
         if size_component is not None:
 
@@ -101,17 +102,17 @@ def process_pygcurse_render_system(
             x_axis = position_component.x_axis + 1
             system.window.fill(char=".", region=(x_axis, y_axis, width - 1, height - 1), fgcolor="grey")
 
-    for entity in get_entities(ecs=ecs):
+    for entity in get_entities(ecdb=ecdb):
 
         position_component = typing.cast(
             typing.Optional[PositionComponent],
-            get_component_of_entity(ecs=ecs, entity=entity, component_type=PositionComponent),
+            get_component_of_entity(ecdb=ecdb, entity=entity, component_type=PositionComponent),
         )
         assert position_component is not None
 
         appearance_component = typing.cast(
             typing.Optional[AppearanceComponent],
-            get_component_of_entity(ecs=ecs, entity=entity, component_type=AppearanceComponent),
+            get_component_of_entity(ecdb=ecdb, entity=entity, component_type=AppearanceComponent),
         )
         if appearance_component is not None:
             system.window.putchar(
@@ -123,21 +124,21 @@ def process_pygcurse_render_system(
 
 
 def process_movement_system(
-    *, system: MovementSystem, ecs: EntityComponentSystem[RogueComponentUnion]
-) -> EntityComponentSystem[RogueComponentUnion]:
+    *, system: MovementSystem, ecdb: EntityComponentDatabase[RogueComponentUnion]
+) -> EntityComponentDatabase[RogueComponentUnion]:
     assert system  # Hack to make 'system' variable marked as used
 
-    for entity in get_entities_with_component(ecs=ecs, component_type=VelocityComponent):
+    for entity in get_entities_with_component(ecdb=ecdb, component_type=VelocityComponent):
 
         position_component = typing.cast(
             typing.Optional[PositionComponent],
-            get_component_of_entity(ecs=ecs, entity=entity, component_type=PositionComponent),
+            get_component_of_entity(ecdb=ecdb, entity=entity, component_type=PositionComponent),
         )
         assert position_component is not None
 
         velocity_component = typing.cast(
             typing.Optional[VelocityComponent],
-            get_component_of_entity(ecs=ecs, entity=entity, component_type=VelocityComponent),
+            get_component_of_entity(ecdb=ecdb, entity=entity, component_type=VelocityComponent),
         )
         assert velocity_component is not None
 
@@ -145,9 +146,9 @@ def process_movement_system(
         x_axis = position_component.x_axis + velocity_component.x_axis
 
         new_position_component = evolve(position_component, y_axis=y_axis, x_axis=x_axis)
-        ecs = add_component(ecs=ecs, entity=entity, component=new_position_component)
+        ecdb = add_component(ecdb=ecdb, entity=entity, component=new_position_component)
 
-    return ecs
+    return ecdb
 
 
 RANDOM_VALUE_TO_YX = {
@@ -159,37 +160,37 @@ RANDOM_VALUE_TO_YX = {
 
 
 def process_enemy_ai_system(
-    *, system: EnemyAISystem, ecs: EntityComponentSystem[RogueComponentUnion]
-) -> EntityComponentSystem[RogueComponentUnion]:
+    *, system: EnemyAISystem, ecdb: EntityComponentDatabase[RogueComponentUnion]
+) -> EntityComponentDatabase[RogueComponentUnion]:
     assert system  # Hack to make 'system' variable marked as used
 
-    for entity in query_entities(ecs=ecs, query_function=is_enemy):
+    for entity in query_entities(ecdb=ecdb, query_function=is_enemy):
         random_value = random.randint(0, len(RANDOM_VALUE_TO_YX) - 1)
         y_axis, x_axis = RANDOM_VALUE_TO_YX[random_value]
 
         velocity_component = create_velocity_component(y_axis=y_axis, x_axis=x_axis)
-        ecs = add_component(ecs=ecs, entity=entity, component=velocity_component)
+        ecdb = add_component(ecdb=ecdb, entity=entity, component=velocity_component)
 
-    return ecs
+    return ecdb
 
 
 def process_system(
-    *, system: SystemUnion, ecs: EntityComponentSystem[RogueComponentUnion]
-) -> EntityComponentSystem[RogueComponentUnion]:
+    *, system: SystemUnion, ecdb: EntityComponentDatabase[RogueComponentUnion]
+) -> EntityComponentDatabase[RogueComponentUnion]:
     if isinstance(system, PygcurseRenderSystem):
-        process_pygcurse_render_system(system=system, ecs=ecs)
+        process_pygcurse_render_system(system=system, ecdb=ecdb)
     elif isinstance(system, MovementSystem):
-        ecs = process_movement_system(system=system, ecs=ecs)
+        ecdb = process_movement_system(system=system, ecdb=ecdb)
     elif isinstance(system, EnemyAISystem):
-        ecs = process_enemy_ai_system(system=system, ecs=ecs)
+        ecdb = process_enemy_ai_system(system=system, ecdb=ecdb)
     else:
         raise ValueError(f"Unsupported System {type(system)}!")
-    return ecs
+    return ecdb
 
 
 def process_systems(
-    *, ecs: EntityComponentSystem[RogueComponentUnion], systems: Systems[SystemUnion]
-) -> EntityComponentSystem[RogueComponentUnion]:
+    *, ecdb: EntityComponentDatabase[RogueComponentUnion], systems: Systems[SystemUnion]
+) -> EntityComponentDatabase[RogueComponentUnion]:
     for system in get_systems(systems=systems):
-        ecs = process_system(system=system, ecs=ecs)
-    return ecs
+        ecdb = process_system(system=system, ecdb=ecdb)
+    return ecdb

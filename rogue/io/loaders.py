@@ -6,7 +6,7 @@ import typing
 from loguru import logger
 import yaml
 
-from rogue.ecs import EntityComponentSystem
+from rogue.ecs import EntityComponentDatabase, create_ecdb, add_entity
 from rogue.components import (
     RogueComponentUnion,
     create_position_component,
@@ -16,7 +16,6 @@ from rogue.components import (
     create_money_component,
     create_health_component,
 )
-from rogue.ecs import create_ecs, add_entity
 
 RoomConfig = typing.Dict[typing.Any, typing.Any]
 
@@ -57,23 +56,21 @@ def _type_to_appearance(item_type: str) -> typing.Dict[str, str]:
     }
 
 
-def load_rogue_entities_and_components_from_input_yaml(
-    input_file_name: pathlib.Path,
-) -> EntityComponentSystem[RogueComponentUnion]:
+def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path,) -> EntityComponentDatabase[RogueComponentUnion]:
 
     logger.info(f"Input file: {input_file_name}")
 
     room_config = _load_room_config(input_file_name=input_file_name)
     logger.info(f"Room Config: {pprint.pformat(room_config)}")
 
-    ecs: EntityComponentSystem[RogueComponentUnion] = create_ecs()
+    ecdb: EntityComponentDatabase[RogueComponentUnion] = create_ecdb()
     for room in room_config:
         room_coordinates = _parse_coordinates(room["coordinates"])
         room_components: typing.List[RogueComponentUnion] = [
             create_position_component(**room_coordinates),
             create_size_component(**_parse_size(room["size"])),
         ]
-        ecs, _ = add_entity(ecs=ecs, components=room_components,)
+        ecdb, _ = add_entity(ecdb=ecdb, components=room_components)
         for item in room["items"]:
             components: typing.List[RogueComponentUnion] = [
                 create_position_component(**_parse_coordinates(item["coordinates"], **room_coordinates)),
@@ -87,6 +84,6 @@ def load_rogue_entities_and_components_from_input_yaml(
                 components.append(create_velocity_component(y_axis=0, x_axis=0))
                 components.append(create_health_component(amount=100))
 
-            ecs, _ = add_entity(ecs=ecs, components=components)
+            ecdb, _ = add_entity(ecdb=ecdb, components=components)
 
-    return ecs
+    return ecdb

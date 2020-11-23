@@ -2,13 +2,13 @@
 Rogue-specific query functions
 """
 
-from rogue.ecs import Entity, EntityComponentSystem, ComponentTemplate
+from rogue.ecs import Entity, EntityComponentDatabase, ComponentTemplate
 from rogue.ecs import get_components_of_entity
 
 
-def is_of_type(ecs: EntityComponentSystem[ComponentTemplate], entity: Entity, entity_type: str) -> bool:
+def is_of_type(ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, entity_type: str) -> bool:
 
-    entity_components = get_components_of_entity(ecs=ecs, entity=entity)
+    entity_components = get_components_of_entity(ecdb=ecdb, entity=entity)
 
     if entity_type == "hero":
         return set(entity_components.keys()) == {
@@ -28,9 +28,9 @@ def is_of_type(ecs: EntityComponentSystem[ComponentTemplate], entity: Entity, en
     return False
 
 
-def is_hero(ecs: EntityComponentSystem[ComponentTemplate], entity: Entity) -> bool:
-    return is_of_type(ecs=ecs, entity=entity, entity_type="hero")
+def is_hero(ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity) -> bool:
+    return is_of_type(ecdb=ecdb, entity=entity, entity_type="hero")
 
 
-def is_enemy(ecs: EntityComponentSystem[ComponentTemplate], entity: Entity) -> bool:
-    return is_of_type(ecs=ecs, entity=entity, entity_type="enemy")
+def is_enemy(ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity) -> bool:
+    return is_of_type(ecdb=ecdb, entity=entity, entity_type="enemy")
