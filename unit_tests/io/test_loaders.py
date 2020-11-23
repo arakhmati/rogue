@@ -2,7 +2,7 @@ import pathlib
 
 from pyrsistent import pmap, pset
 
-from rogue.types import (
+from rogue.ecs import (
     EntityComponentSystem,
     Entity,
 )
@@ -110,7 +110,6 @@ def test_load_rogue_entities_and_components_from_input_yaml(
                 "MoneyComponent": pset([Entity(unique_id=3)]),
             }
         ),
-        _systems=pmap({}),
     )
 
     ecs = load_rogue_entities_and_components_from_input_yaml(input_file_name)

@@ -6,7 +6,7 @@ import typing
 from loguru import logger
 import yaml
 
-from rogue.types import EntityComponentSystem
+from rogue.ecs import EntityComponentSystem
 from rogue.components import (
     RogueComponentUnion,
     create_position_component,

@@ -4,24 +4,44 @@ Generic Entity-Component-System code
 In this file, access to private members of EntityComponentSystem[Component] class is allowed.
 """
 
+
 import typing
 
-import pyrsistent
+import attr
+import pyrsistent.typing
 
-from rogue.types import (
-    EntityComponentSystem,
-    Entity,
-    # Components
-    ComponentTemplate,
-    MapFromComponentStrToComponent,
-    IterableOfComponents,
-    # Systems
-    Priority,
-    System,
-    # Other
-    QueryFunction,
-)
 from rogue.generic import type_to_str
+
+
+@attr.s(frozen=True, kw_only=True)
+class Entity:
+    unique_id: int = attr.ib()
+
+
+SetOfEntities = pyrsistent.typing.PSet[Entity]
+
+ComponentTemplate = typing.TypeVar("ComponentTemplate")
+IterableOfComponents = typing.Iterable[ComponentTemplate]
+SetOfComponents = pyrsistent.typing.PSet[ComponentTemplate]
+ComponentStr = str
+MapFromComponentStrToComponent = pyrsistent.typing.PMap[ComponentStr, ComponentTemplate]
+MapFromEntityToMapFromComponentStrToComponent = pyrsistent.typing.PMap[
+    Entity, MapFromComponentStrToComponent[ComponentTemplate]
+]
+MapFromComponentToSetOfEntities = pyrsistent.typing.PMap[ComponentStr, SetOfEntities]
+
+
+class EntityComponentSystem(typing.Generic[ComponentTemplate], pyrsistent.PClass):
+    _last_unique_id: int = pyrsistent.field(mandatory=True)
+    _entities: MapFromEntityToMapFromComponentStrToComponent[ComponentTemplate] = pyrsistent.field(
+        initial=pyrsistent.pmap
+    )
+    _components: MapFromComponentToSetOfEntities = pyrsistent.field(initial=pyrsistent.pmap)
+
+
+class QueryFunction(typing.Protocol):
+    def __call__(self, ecs: EntityComponentSystem[ComponentTemplate], entity: Entity) -> bool:
+        ...
 
 
 def create_ecs() -> EntityComponentSystem[ComponentTemplate]:
@@ -64,18 +84,6 @@ def add_component(
     new_components = components.set(component_type_str, new_component_entities)
 
     return ecs.set(_entities=new_entities, _components=new_components)
-
-
-def add_system(
-    *, ecs: EntityComponentSystem[ComponentTemplate], system: System, priority: Priority
-) -> EntityComponentSystem[ComponentTemplate]:
-    assert priority >= 0, "Priority must be a positive number!"
-
-    systems = ecs._systems  # pylint: disable=protected-access
-    systems_with_given_priority = systems.get(priority, pyrsistent.pset())
-    new_systems_with_given_priority = systems_with_given_priority.add(system)
-    new_systems = systems.set(priority, new_systems_with_given_priority)
-    return ecs.set(_systems=new_systems)
 
 
 def does_entity_have_component(
@@ -122,7 +130,37 @@ def query_entities(
             yield entity
 
 
-def get_systems(*, ecs: EntityComponentSystem[ComponentTemplate]) -> typing.Generator[System, None, None]:
-    for _, systems in ecs._systems.items():  # pylint: disable=protected-access
-        for system in systems:
+# Systems
+SystemPriority = int
+SystemTemplate = typing.TypeVar("SystemTemplate")
+SetOfSystems = pyrsistent.typing.PSet[SystemTemplate]
+MapFromPriorityToSetOfSystems = pyrsistent.typing.PMap[SystemPriority, SetOfSystems[SystemTemplate]]
+
+
+class Systems(typing.Generic[SystemTemplate], pyrsistent.PClass):
+    _priority_to_systems: MapFromPriorityToSetOfSystems[SystemTemplate] = pyrsistent.field(initial=pyrsistent.pmap)
+
+
+def create_systems() -> Systems[SystemTemplate]:
+    return Systems()
+
+
+def add_system(
+    *, systems: Systems[SystemTemplate], system: SystemTemplate, priority: SystemPriority
+) -> Systems[SystemTemplate]:
+    assert priority >= 0, "Priority must be a positive number!"
+
+    priority_to_systems = systems._priority_to_systems  # pylint: disable=protected-access
+    systems_with_given_priority = priority_to_systems.get(priority, pyrsistent.pset())
+    new_systems_with_given_priority = systems_with_given_priority.add(system)
+    new_priority_to_systems = priority_to_systems.set(priority, new_systems_with_given_priority)
+    return systems.set(_priority_to_systems=new_priority_to_systems)
+
+
+def get_systems(*, systems: Systems[SystemTemplate]) -> typing.Generator[SystemTemplate, None, None]:
+    for _, systems_with_given_priority in systems._priority_to_systems.items():  # pylint: disable=protected-access
+        for system in systems_with_given_priority:
             yield system
+
+
+# Systems End

@@ -2,7 +2,7 @@
 Rogue-specific query functions
 """
 
-from rogue.types import Entity, EntityComponentSystem, ComponentTemplate
+from rogue.ecs import Entity, EntityComponentSystem, ComponentTemplate
 from rogue.ecs import get_components_of_entity
 
 

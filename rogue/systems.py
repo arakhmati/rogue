@@ -1,18 +1,12 @@
 import random
 import typing
 
+import attr
 import pygcurse
 
 from rogue.generic import evolve
 from rogue.query_functions import is_enemy
-from rogue.types import (
-    EntityComponentSystem,
-    # Systems
-    System,
-    PygcurseRenderSystem,
-    MovementSystem,
-    EnemyAISystem,
-)
+from rogue.ecs import EntityComponentSystem, Systems
 from rogue.components import (
     RogueComponentUnion,
     PositionComponent,
@@ -29,6 +23,26 @@ from rogue.ecs import (
     get_systems,
 )
 from rogue.components import create_velocity_component
+
+
+# Systems
+@attr.s(frozen=True, kw_only=True)
+class PygcurseRenderSystem:
+    window: pygcurse.PygcurseWindow = attr.ib()
+
+
+@attr.s(frozen=True, kw_only=True)
+class MovementSystem:
+    ...
+
+
+@attr.s(frozen=True, kw_only=True)
+class EnemyAISystem:
+    ...
+
+
+SystemUnion = typing.Union[PygcurseRenderSystem, MovementSystem, EnemyAISystem]
+# Systems End
 
 
 def create_pygcurse_render_system(*, height: int, width: int) -> PygcurseRenderSystem:
@@ -160,7 +174,7 @@ def process_enemy_ai_system(
 
 
 def process_system(
-    *, system: System, ecs: EntityComponentSystem[RogueComponentUnion]
+    *, system: SystemUnion, ecs: EntityComponentSystem[RogueComponentUnion]
 ) -> EntityComponentSystem[RogueComponentUnion]:
     if isinstance(system, PygcurseRenderSystem):
         process_pygcurse_render_system(system=system, ecs=ecs)
@@ -173,7 +187,9 @@ def process_system(
     return ecs
 
 
-def process_ecs(*, ecs: EntityComponentSystem[RogueComponentUnion]) -> EntityComponentSystem[RogueComponentUnion]:
-    for system in get_systems(ecs=ecs):
+def process_systems(
+    *, ecs: EntityComponentSystem[RogueComponentUnion], systems: Systems[SystemUnion]
+) -> EntityComponentSystem[RogueComponentUnion]:
+    for system in get_systems(systems=systems):
         ecs = process_system(system=system, ecs=ecs)
     return ecs

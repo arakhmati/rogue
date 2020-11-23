@@ -8,8 +8,16 @@ from rogue.ecs import (
     add_system,
     add_component,
     query_entities,
+    create_systems,
 )
-from rogue.systems import process_ecs, create_pygcurse_render_system, create_movement_system, create_enemy_ai_system
+from rogue.systems import (
+    Systems,
+    SystemUnion,
+    process_systems,
+    create_pygcurse_render_system,
+    create_movement_system,
+    create_enemy_ai_system,
+)
 from rogue.components import create_velocity_component
 
 from rogue.query_functions import is_hero
@@ -18,10 +26,12 @@ from rogue.query_functions import is_hero
 def rogue_pygcurse(*, input_file_name: pathlib.Path, window_height: int, window_width: int) -> None:
 
     ecs = load_rogue_entities_and_components_from_input_yaml(input_file_name=input_file_name)
-    ecs = add_system(ecs=ecs, priority=0, system=create_enemy_ai_system())
-    ecs = add_system(ecs=ecs, priority=1, system=create_movement_system())
-    ecs = add_system(
-        ecs=ecs, priority=2, system=create_pygcurse_render_system(height=window_height, width=window_width)
+
+    systems: Systems[SystemUnion] = create_systems()
+    systems = add_system(systems=systems, priority=0, system=create_enemy_ai_system())
+    systems = add_system(systems=systems, priority=1, system=create_movement_system())
+    systems = add_system(
+        systems=systems, priority=2, system=create_pygcurse_render_system(height=window_height, width=window_width)
     )
 
     hero = first(query_entities(ecs=ecs, query_function=is_hero))
@@ -55,4 +65,4 @@ def rogue_pygcurse(*, input_file_name: pathlib.Path, window_height: int, window_
                     entity=hero,
                     component=create_velocity_component(y_axis=hero_velocity_y, x_axis=hero_velocity_x),
                 )
-                ecs = process_ecs(ecs=ecs)
+                ecs = process_systems(ecs=ecs, systems=systems)
