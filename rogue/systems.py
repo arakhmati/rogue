@@ -27,7 +27,6 @@ from rogue.components import (
     AppearanceComponent,
     SizeComponent,
 )
-from rogue.components import create_velocity_component
 
 
 class SystemFeedback(enum.Enum):
@@ -66,7 +65,7 @@ class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
     window: pygcurse.PygcurseWindow = attr.ib()
 
     @classmethod
-    def create(cls, *, height: int, width: int) -> "PygcurseRenderSystem":
+    def create_from_height_and_width(cls, *, height: int, width: int) -> "PygcurseRenderSystem":
         window = pygcurse.PygcurseWindow(width=width, height=height)
         return PygcurseRenderSystem(window=window)
 
@@ -136,7 +135,7 @@ class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
 
 @attr.s(frozen=True, kw_only=True)
 class MovementSystem(ReturnEntityComponentDatabaseTrait):
-    ZERO_VELOCITY_COMPONENT = create_velocity_component(x_axis=0, y_axis=0)
+    ZERO_VELOCITY_COMPONENT = VelocityComponent.create_from_attributes(x_axis=0, y_axis=0)
 
     @classmethod
     def create(cls) -> "MovementSystem":
@@ -189,7 +188,7 @@ class EnemyAISystem(ReturnEntityComponentDatabaseTrait):
             random_value = random.randint(0, len(EnemyAISystem.RANDOM_VALUE_TO_YX) - 1)
             y_axis, x_axis = EnemyAISystem.RANDOM_VALUE_TO_YX[random_value]
 
-            velocity_component = create_velocity_component(y_axis=y_axis, x_axis=x_axis)
+            velocity_component = VelocityComponent.create_from_attributes(y_axis=y_axis, x_axis=x_axis)
             ecdb = add_component(ecdb=ecdb, entity=entity, component=velocity_component)
 
         return ecdb, SystemFeedback.NoFeedback
@@ -233,7 +232,9 @@ class PygameHeroControlSystem(YieldEntityComponentDatabaseTrait):
                     ecdb = add_component(
                         ecdb=ecdb,
                         entity=hero,
-                        component=create_velocity_component(y_axis=hero_velocity_y, x_axis=hero_velocity_x),
+                        component=VelocityComponent.create_from_attributes(
+                            y_axis=hero_velocity_y, x_axis=hero_velocity_x
+                        ),
                     )
                     yield ecdb, SystemFeedback.NoFeedback
 

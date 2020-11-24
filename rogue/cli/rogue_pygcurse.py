@@ -20,7 +20,9 @@ def create_rogue_systems(*, window_height: int, window_width: int) -> Systems[Sy
     systems = add_system(systems=systems, priority=0, system=EnemyAISystem.create())
     systems = add_system(systems=systems, priority=1, system=MovementSystem.create())
     systems = add_system(
-        systems=systems, priority=2, system=PygcurseRenderSystem.create(height=window_height, width=window_width)
+        systems=systems,
+        priority=2,
+        system=PygcurseRenderSystem.create_from_height_and_width(height=window_height, width=window_width),
     )
     systems = add_system(systems=systems, priority=0, system=PygameHeroControlSystem.create())
     return systems

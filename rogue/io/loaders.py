@@ -9,12 +9,12 @@ import yaml
 from rogue.generic.ecs import EntityComponentDatabase, create_ecdb, add_entity
 from rogue.components import (
     RogueComponentUnion,
-    create_position_component,
-    create_size_component,
-    create_apperance_component,
-    create_velocity_component,
-    create_money_component,
-    create_health_component,
+    PositionComponent,
+    SizeComponent,
+    AppearanceComponent,
+    VelocityComponent,
+    MoneyComponent,
+    HealthComponent,
 )
 
 RoomConfig = typing.Dict[typing.Any, typing.Any]
@@ -67,22 +67,22 @@ def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path,) -> EntityCom
     for room in room_config:
         room_coordinates = _parse_coordinates(room["coordinates"])
         room_components: typing.List[RogueComponentUnion] = [
-            create_position_component(**room_coordinates),
-            create_size_component(**_parse_size(room["size"])),
+            PositionComponent.create_from_attributes(**room_coordinates),
+            SizeComponent.create_from_attributes(**_parse_size(room["size"])),
         ]
         ecdb, _ = add_entity(ecdb=ecdb, components=room_components)
         for item in room["items"]:
             components: typing.List[RogueComponentUnion] = [
-                create_position_component(**_parse_coordinates(item["coordinates"], **room_coordinates)),
-                create_apperance_component(**_type_to_appearance(item["type"])),
+                PositionComponent.create_from_attributes(**_parse_coordinates(item["coordinates"], **room_coordinates)),
+                AppearanceComponent.create_from_attributes(**_type_to_appearance(item["type"])),
             ]
             if item["type"] == "hero":
-                components.append(create_velocity_component(y_axis=0, x_axis=0))
-                components.append(create_health_component(amount=100))
-                components.append(create_money_component(amount=0))
+                components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
+                components.append(HealthComponent.create_from_attributes(amount=100))
+                components.append(MoneyComponent.create_from_attributes(amount=0))
             elif item["type"] in {"hobgoblin"}:
-                components.append(create_velocity_component(y_axis=0, x_axis=0))
-                components.append(create_health_component(amount=100))
+                components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
+                components.append(HealthComponent.create_from_attributes(amount=100))
 
             ecdb, _ = add_entity(ecdb=ecdb, components=components)
 
