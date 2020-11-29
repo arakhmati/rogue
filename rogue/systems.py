@@ -19,7 +19,7 @@ import pygcurse
 from toolz import first
 
 from rogue.generic.functions import evolve
-from rogue.query_functions import is_hero, is_enemy
+from rogue.filter_functions import is_hero, is_enemy
 from rogue.generic.ecs import (
     EntityComponentDatabase,
     Systems,
@@ -183,7 +183,7 @@ class EnemyAISystem(ReturnEntityComponentDatabaseTrait):
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
     ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
-        for entity, _ in query_entities(ecdb=ecdb, query_function=is_enemy):
+        for entity, _ in query_entities(ecdb=ecdb, filter_function=is_enemy):
             random_value = random.randint(0, len(EnemyAISystem.RANDOM_VALUE_TO_YX) - 1)
             y_axis, x_axis = EnemyAISystem.RANDOM_VALUE_TO_YX[random_value]
 
@@ -213,7 +213,7 @@ class PygameHeroControlSystem(YieldEntityComponentDatabaseTrait):
                 if event.type != pygame.KEYDOWN:
                     yield ecdb, SystemFeedback.IgnorePygameEvent
                 else:
-                    hero = first(first(query_entities(ecdb=ecdb, query_function=is_hero)))
+                    hero = first(first(query_entities(ecdb=ecdb, filter_function=is_hero)))
                     hero_velocity_y, hero_velocity_x = 0, 0
 
                     if event.key == pygame.K_LEFT:

@@ -1,5 +1,5 @@
 """
-Rogue-specific query functions
+Rogue-specific filter functions
 """
 
 from typing import Iterable
