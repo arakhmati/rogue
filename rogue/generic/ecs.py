@@ -95,48 +95,35 @@ def add_component(
     return ecdb.set(_entities=new_entities, _components=new_components)
 
 
-def does_entity_have_component(
-    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component_type: Type[ComponentTemplate]
-) -> bool:
-    component_type_str = type_to_str(component_type)
-    return component_type_str in ecdb._entities[entity]  # pylint: disable=protected-access
-
-
-def get_component_of_entity(
-    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component_type: Type[ComponentTemplate]
-) -> Optional[ComponentTemplate]:
-
-    if not does_entity_have_component(ecdb=ecdb, entity=entity, component_type=component_type):
-        return None
-
-    component_type_str = type_to_str(component_type)
-    component = ecdb._entities[entity][component_type_str]  # pylint: disable=protected-access
-    return component
-
-
-def get_components_of_entity(
+def query_components_of_entity(
     *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity
 ) -> MapFromComponentStrToComponent[ComponentTemplate]:
     return ecdb._entities[entity]  # pylint: disable=protected-access
 
 
-def get_entities(*, ecdb: EntityComponentDatabase[ComponentTemplate]) -> Generator[Entity, None, None]:
-    yield from ecdb._entities  # pylint: disable=protected-access
-
-
-def get_entities_with_component(
-    *, ecdb: EntityComponentDatabase[ComponentTemplate], component_type: Type[ComponentTemplate]
-) -> Generator[Entity, None, None]:
-    component_type_str = type_to_str(component_type)
-    yield from ecdb._components[component_type_str]  # pylint: disable=protected-access
-
-
 def query_entities(
-    *, ecdb: EntityComponentDatabase[ComponentTemplate], query_function: QueryFunction
-) -> Generator[Entity, None, None]:
-    for entity in ecdb._entities:  # pylint: disable=protected-access
-        if query_function(ecdb=ecdb, entity=entity):
-            yield entity
+    *,
+    ecdb: EntityComponentDatabase[ComponentTemplate],
+    component_types: Optional[Iterable[Type[ComponentTemplate]]] = None,
+    query_function: Optional[QueryFunction] = None,
+) -> Generator[Tuple[Entity, Tuple[Optional[ComponentTemplate], ...]], None, None]:
+    for entity, components in ecdb._entities.items():  # pylint: disable=protected-access
+
+        if query_function is not None:
+            if not query_function(ecdb=ecdb, entity=entity):
+                continue
+
+        requested_components: Tuple[Optional[ComponentTemplate], ...]
+        if component_types is None:
+            requested_components = tuple(components.values())
+        else:
+            component_types_as_str = [type_to_str(component_type) for component_type in component_types]
+            requested_components = tuple(
+                components[component_type_str] if component_type_str in components else None
+                for component_type_str in component_types_as_str
+            )
+
+        yield entity, requested_components
 
 
 # Systems

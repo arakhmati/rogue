@@ -1,13 +1,16 @@
 import abc
 import enum
 import random
-
+from collections import deque
 from typing import (
     cast,
     Optional,
     Union,
     Tuple,
     Generator,
+    List,
+    Type,
+    Deque,
 )
 
 import attr
@@ -21,9 +24,6 @@ from rogue.generic.ecs import (
     EntityComponentDatabase,
     Systems,
     add_component,
-    get_component_of_entity,
-    get_entities,
-    get_entities_with_component,
     query_entities,
     get_systems,
 )
@@ -77,19 +77,19 @@ class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
         return PygcurseRenderSystem(window=window)
 
     def __call__(self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]) -> SystemFeedback:
-        for entity in get_entities(ecdb=ecdb):
-            position_component = cast(
-                Optional[PositionComponent],
-                get_component_of_entity(ecdb=ecdb, entity=entity, component_type=PositionComponent),
-            )
+
+        dynamic_entities: Deque[Tuple[PositionComponent, AppearanceComponent]] = deque(maxlen=None)
+
+        component_types: List[Type[RogueComponentUnion]] = [PositionComponent, SizeComponent, AppearanceComponent]
+        for _, components in query_entities(ecdb=ecdb, component_types=component_types):
+            position_component = cast(Optional[PositionComponent], components[0])
+            size_component = cast(Optional[SizeComponent], components[1])
+            appearance_component = cast(Optional[AppearanceComponent], components[2])
+
             assert position_component is not None
 
-            size_component = cast(
-                Optional[SizeComponent],
-                get_component_of_entity(ecdb=ecdb, entity=entity, component_type=SizeComponent),
-            )
+            # Visualize rooms
             if size_component is not None:
-
                 height, width = size_component.height, size_component.width
 
                 # Left Wall
@@ -117,25 +117,19 @@ class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
                 x_axis = position_component.x_axis + 1
                 self.window.fill(char=".", region=(x_axis, y_axis, width - 1, height - 1), fgcolor="grey")
 
-        for entity in get_entities(ecdb=ecdb):
-
-            position_component = cast(
-                Optional[PositionComponent],
-                get_component_of_entity(ecdb=ecdb, entity=entity, component_type=PositionComponent),
-            )
-            assert position_component is not None
-
-            appearance_component = cast(
-                Optional[AppearanceComponent],
-                get_component_of_entity(ecdb=ecdb, entity=entity, component_type=AppearanceComponent),
-            )
+            # Defer dynamic entities to make sure all static ones already rendered
             if appearance_component is not None:
-                self.window.putchar(
-                    appearance_component.symbol,
-                    x=position_component.x_axis,
-                    y=position_component.y_axis,
-                    fgcolor=appearance_component.color,
-                )
+                dynamic_entities.append((position_component, appearance_component))
+
+        # Visualize dynamic entities
+        while len(dynamic_entities) > 0:
+            position_component, appearance_component = dynamic_entities.popleft()
+            self.window.putchar(
+                appearance_component.symbol,
+                x=position_component.x_axis,
+                y=position_component.y_axis,
+                fgcolor=appearance_component.color,
+            )
 
         return SystemFeedback.NoFeedback
 
@@ -152,18 +146,16 @@ class MovementSystem(ReturnEntityComponentDatabaseTrait):
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
     ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
 
-        for entity in get_entities_with_component(ecdb=ecdb, component_type=VelocityComponent):
-            position_component = cast(
-                Optional[PositionComponent],
-                get_component_of_entity(ecdb=ecdb, entity=entity, component_type=PositionComponent),
-            )
-            assert position_component is not None
+        component_types: List[Type[RogueComponentUnion]] = [PositionComponent, VelocityComponent]
+        for entity, components in query_entities(ecdb=ecdb, component_types=component_types):
+            position_component = cast(Optional[PositionComponent], components[0])
+            velocity_component = cast(Optional[VelocityComponent], components[1])
 
-            velocity_component = cast(
-                Optional[VelocityComponent],
-                get_component_of_entity(ecdb=ecdb, entity=entity, component_type=VelocityComponent),
-            )
-            assert velocity_component is not None
+            if position_component is None:
+                continue
+
+            if velocity_component is None:
+                continue
 
             y_axis = position_component.y_axis + velocity_component.y_axis
             x_axis = position_component.x_axis + velocity_component.x_axis
@@ -191,7 +183,7 @@ class EnemyAISystem(ReturnEntityComponentDatabaseTrait):
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
     ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
-        for entity in query_entities(ecdb=ecdb, query_function=is_enemy):
+        for entity, _ in query_entities(ecdb=ecdb, query_function=is_enemy):
             random_value = random.randint(0, len(EnemyAISystem.RANDOM_VALUE_TO_YX) - 1)
             y_axis, x_axis = EnemyAISystem.RANDOM_VALUE_TO_YX[random_value]
 
@@ -221,7 +213,7 @@ class PygameHeroControlSystem(YieldEntityComponentDatabaseTrait):
                 if event.type != pygame.KEYDOWN:
                     yield ecdb, SystemFeedback.IgnorePygameEvent
                 else:
-                    hero = first(query_entities(ecdb=ecdb, query_function=is_hero))
+                    hero = first(first(query_entities(ecdb=ecdb, query_function=is_hero)))
                     hero_velocity_y, hero_velocity_x = 0, 0
 
                     if event.key == pygame.K_LEFT:
