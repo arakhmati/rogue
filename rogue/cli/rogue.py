@@ -1,4 +1,4 @@
-import typing
+from typing import Any
 import pathlib
 
 import click
@@ -15,5 +15,5 @@ def rogue() -> None:
 @click.argument("input_file_name", type=pathlib.Path)
 @click.option("--window_height", type=int, default=50)
 @click.option("--window_width", type=int, default=80)
-def pygcurse(**kwargs: typing.Any) -> None:
+def pygcurse(**kwargs: Any) -> None:
     rogue_pygcurse(**kwargs)

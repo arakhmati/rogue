@@ -5,7 +5,16 @@ In this file, access to private members of EntityComponentDatabase[Component] cl
 """
 
 
-import typing
+from typing import (
+    Protocol,
+    Generic,
+    Type,
+    TypeVar,
+    Iterable,
+    Optional,
+    Tuple,
+    Generator,
+)
 
 import attr
 import pyrsistent.typing
@@ -20,8 +29,8 @@ class Entity:
 
 SetOfEntities = pyrsistent.typing.PSet[Entity]
 
-ComponentTemplate = typing.TypeVar("ComponentTemplate")
-IterableOfComponents = typing.Iterable[ComponentTemplate]
+ComponentTemplate = TypeVar("ComponentTemplate")
+IterableOfComponents = Iterable[ComponentTemplate]
 SetOfComponents = pyrsistent.typing.PSet[ComponentTemplate]
 ComponentStr = str
 MapFromComponentStrToComponent = pyrsistent.typing.PMap[ComponentStr, ComponentTemplate]
@@ -31,7 +40,7 @@ MapFromEntityToMapFromComponentStrToComponent = pyrsistent.typing.PMap[
 MapFromComponentToSetOfEntities = pyrsistent.typing.PMap[ComponentStr, SetOfEntities]
 
 
-class EntityComponentDatabase(typing.Generic[ComponentTemplate], pyrsistent.PClass):
+class EntityComponentDatabase(Generic[ComponentTemplate], pyrsistent.PClass):
     _last_unique_id: int = pyrsistent.field(mandatory=True)
     _entities: MapFromEntityToMapFromComponentStrToComponent[ComponentTemplate] = pyrsistent.field(
         initial=pyrsistent.pmap
@@ -39,7 +48,7 @@ class EntityComponentDatabase(typing.Generic[ComponentTemplate], pyrsistent.PCla
     _components: MapFromComponentToSetOfEntities = pyrsistent.field(initial=pyrsistent.pmap)
 
 
-class QueryFunction(typing.Protocol):
+class QueryFunction(Protocol):
     def __call__(self, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity) -> bool:
         ...
 
@@ -51,8 +60,8 @@ def create_ecdb() -> EntityComponentDatabase[ComponentTemplate]:
 def add_entity(
     *,
     ecdb: EntityComponentDatabase[ComponentTemplate],
-    components: typing.Optional[IterableOfComponents[ComponentTemplate]] = None,
-) -> typing.Tuple[EntityComponentDatabase[ComponentTemplate], Entity]:
+    components: Optional[IterableOfComponents[ComponentTemplate]] = None,
+) -> Tuple[EntityComponentDatabase[ComponentTemplate], Entity]:
     unique_id = ecdb._last_unique_id  # pylint: disable=protected-access
     new_unique_id = unique_id + 1
 
@@ -87,15 +96,15 @@ def add_component(
 
 
 def does_entity_have_component(
-    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component_type: typing.Type[ComponentTemplate]
+    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component_type: Type[ComponentTemplate]
 ) -> bool:
     component_type_str = type_to_str(component_type)
     return component_type_str in ecdb._entities[entity]  # pylint: disable=protected-access
 
 
 def get_component_of_entity(
-    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component_type: typing.Type[ComponentTemplate]
-) -> typing.Optional[ComponentTemplate]:
+    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component_type: Type[ComponentTemplate]
+) -> Optional[ComponentTemplate]:
 
     if not does_entity_have_component(ecdb=ecdb, entity=entity, component_type=component_type):
         return None
@@ -111,20 +120,20 @@ def get_components_of_entity(
     return ecdb._entities[entity]  # pylint: disable=protected-access
 
 
-def get_entities(*, ecdb: EntityComponentDatabase[ComponentTemplate]) -> typing.Generator[Entity, None, None]:
+def get_entities(*, ecdb: EntityComponentDatabase[ComponentTemplate]) -> Generator[Entity, None, None]:
     yield from ecdb._entities  # pylint: disable=protected-access
 
 
 def get_entities_with_component(
-    *, ecdb: EntityComponentDatabase[ComponentTemplate], component_type: typing.Type[ComponentTemplate]
-) -> typing.Generator[Entity, None, None]:
+    *, ecdb: EntityComponentDatabase[ComponentTemplate], component_type: Type[ComponentTemplate]
+) -> Generator[Entity, None, None]:
     component_type_str = type_to_str(component_type)
     yield from ecdb._components[component_type_str]  # pylint: disable=protected-access
 
 
 def query_entities(
     *, ecdb: EntityComponentDatabase[ComponentTemplate], query_function: QueryFunction
-) -> typing.Generator[Entity, None, None]:
+) -> Generator[Entity, None, None]:
     for entity in ecdb._entities:  # pylint: disable=protected-access
         if query_function(ecdb=ecdb, entity=entity):
             yield entity
@@ -132,12 +141,12 @@ def query_entities(
 
 # Systems
 SystemPriority = int
-SystemTemplate = typing.TypeVar("SystemTemplate")
+SystemTemplate = TypeVar("SystemTemplate")
 SetOfSystems = pyrsistent.typing.PSet[SystemTemplate]
 MapFromPriorityToSetOfSystems = pyrsistent.typing.PMap[SystemPriority, SetOfSystems[SystemTemplate]]
 
 
-class Systems(typing.Generic[SystemTemplate], pyrsistent.PClass):
+class Systems(Generic[SystemTemplate], pyrsistent.PClass):
     _priority_to_systems: MapFromPriorityToSetOfSystems[SystemTemplate] = pyrsistent.field(initial=pyrsistent.pmap)
 
 
@@ -157,7 +166,7 @@ def add_system(
     return systems.set(_priority_to_systems=new_priority_to_systems)
 
 
-def get_systems(*, systems: Systems[SystemTemplate]) -> typing.Generator[SystemTemplate, None, None]:
+def get_systems(*, systems: Systems[SystemTemplate]) -> Generator[SystemTemplate, None, None]:
     for _, systems_with_given_priority in systems._priority_to_systems.items():  # pylint: disable=protected-access
         for system in systems_with_given_priority:
             yield system

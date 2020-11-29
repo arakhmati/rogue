@@ -1,7 +1,11 @@
 import pathlib
 import pprint
 
-import typing
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from loguru import logger
 import yaml
@@ -17,7 +21,7 @@ from rogue.components import (
     HealthComponent,
 )
 
-RoomConfig = typing.Dict[typing.Any, typing.Any]
+RoomConfig = Dict[Any, Any]
 
 
 def _load_room_config(*, input_file_name: pathlib.Path) -> RoomConfig:
@@ -26,19 +30,19 @@ def _load_room_config(*, input_file_name: pathlib.Path) -> RoomConfig:
     return room_config
 
 
-def _parse_coordinates(coordinates: str, y_axis: int = 0, x_axis: int = 0) -> typing.Dict[str, int]:
+def _parse_coordinates(coordinates: str, y_axis: int = 0, x_axis: int = 0) -> Dict[str, int]:
     parsed_y, parsed_x = (int(number) for number in coordinates.split(","))
     parsed_y += y_axis
     parsed_x += x_axis
     return {"y_axis": parsed_y, "x_axis": parsed_x}
 
 
-def _parse_size(size: str) -> typing.Dict[str, int]:
+def _parse_size(size: str) -> Dict[str, int]:
     height, width = (int(number) for number in size.split(","))
     return {"height": height, "width": width}
 
 
-def _type_to_appearance(item_type: str) -> typing.Dict[str, str]:
+def _type_to_appearance(item_type: str) -> Dict[str, str]:
     item_type_to_appearance = {
         "hero": ("#", "purple"),
         "sword": ("(", "green"),
@@ -66,13 +70,13 @@ def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path,) -> EntityCom
     ecdb: EntityComponentDatabase[RogueComponentUnion] = create_ecdb()
     for room in room_config:
         room_coordinates = _parse_coordinates(room["coordinates"])
-        room_components: typing.List[RogueComponentUnion] = [
+        room_components: List[RogueComponentUnion] = [
             PositionComponent.create_from_attributes(**room_coordinates),
             SizeComponent.create_from_attributes(**_parse_size(room["size"])),
         ]
         ecdb, _ = add_entity(ecdb=ecdb, components=room_components)
         for item in room["items"]:
-            components: typing.List[RogueComponentUnion] = [
+            components: List[RogueComponentUnion] = [
                 PositionComponent.create_from_attributes(**_parse_coordinates(item["coordinates"], **room_coordinates)),
                 AppearanceComponent.create_from_attributes(**_type_to_appearance(item["type"])),
             ]

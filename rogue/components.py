@@ -1,4 +1,4 @@
-import typing
+from typing import Union
 
 import attr
 
@@ -70,7 +70,7 @@ class DamageComponent:
         return cls(damage=damage)
 
 
-RogueComponentUnion = typing.Union[
+RogueComponentUnion = Union[
     PositionComponent,
     VelocityComponent,
     SizeComponent,

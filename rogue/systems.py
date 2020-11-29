@@ -1,7 +1,14 @@
 import abc
 import enum
 import random
-import typing
+
+from typing import (
+    cast,
+    Optional,
+    Union,
+    Tuple,
+    Generator,
+)
 
 import attr
 import pygame
@@ -47,7 +54,7 @@ class ReturnEntityComponentDatabaseTrait:
     @abc.abstractmethod
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> typing.Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
+    ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
         ...
 
 
@@ -56,7 +63,7 @@ class YieldEntityComponentDatabaseTrait:
     @abc.abstractmethod
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> typing.Generator[typing.Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback], None, None]:
+    ) -> Generator[Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback], None, None]:
         ...
 
 
@@ -71,14 +78,14 @@ class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
 
     def __call__(self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]) -> SystemFeedback:
         for entity in get_entities(ecdb=ecdb):
-            position_component = typing.cast(
-                typing.Optional[PositionComponent],
+            position_component = cast(
+                Optional[PositionComponent],
                 get_component_of_entity(ecdb=ecdb, entity=entity, component_type=PositionComponent),
             )
             assert position_component is not None
 
-            size_component = typing.cast(
-                typing.Optional[SizeComponent],
+            size_component = cast(
+                Optional[SizeComponent],
                 get_component_of_entity(ecdb=ecdb, entity=entity, component_type=SizeComponent),
             )
             if size_component is not None:
@@ -112,14 +119,14 @@ class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
 
         for entity in get_entities(ecdb=ecdb):
 
-            position_component = typing.cast(
-                typing.Optional[PositionComponent],
+            position_component = cast(
+                Optional[PositionComponent],
                 get_component_of_entity(ecdb=ecdb, entity=entity, component_type=PositionComponent),
             )
             assert position_component is not None
 
-            appearance_component = typing.cast(
-                typing.Optional[AppearanceComponent],
+            appearance_component = cast(
+                Optional[AppearanceComponent],
                 get_component_of_entity(ecdb=ecdb, entity=entity, component_type=AppearanceComponent),
             )
             if appearance_component is not None:
@@ -143,17 +150,17 @@ class MovementSystem(ReturnEntityComponentDatabaseTrait):
 
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> typing.Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
+    ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
 
         for entity in get_entities_with_component(ecdb=ecdb, component_type=VelocityComponent):
-            position_component = typing.cast(
-                typing.Optional[PositionComponent],
+            position_component = cast(
+                Optional[PositionComponent],
                 get_component_of_entity(ecdb=ecdb, entity=entity, component_type=PositionComponent),
             )
             assert position_component is not None
 
-            velocity_component = typing.cast(
-                typing.Optional[VelocityComponent],
+            velocity_component = cast(
+                Optional[VelocityComponent],
                 get_component_of_entity(ecdb=ecdb, entity=entity, component_type=VelocityComponent),
             )
             assert velocity_component is not None
@@ -183,7 +190,7 @@ class EnemyAISystem(ReturnEntityComponentDatabaseTrait):
 
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> typing.Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
+    ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
         for entity in query_entities(ecdb=ecdb, query_function=is_enemy):
             random_value = random.randint(0, len(EnemyAISystem.RANDOM_VALUE_TO_YX) - 1)
             y_axis, x_axis = EnemyAISystem.RANDOM_VALUE_TO_YX[random_value]
@@ -202,7 +209,7 @@ class PygameHeroControlSystem(YieldEntityComponentDatabaseTrait):
 
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> typing.Generator[typing.Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback], None, None]:
+    ) -> Generator[Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback], None, None]:
 
         while True:
             for event in pygame.event.get():
@@ -239,12 +246,12 @@ class PygameHeroControlSystem(YieldEntityComponentDatabaseTrait):
                     yield ecdb, SystemFeedback.NoFeedback
 
 
-SystemUnion = typing.Union[PygcurseRenderSystem, MovementSystem, EnemyAISystem, PygameHeroControlSystem]
+SystemUnion = Union[PygcurseRenderSystem, MovementSystem, EnemyAISystem, PygameHeroControlSystem]
 
 
 def process_system(
     *, system: SystemUnion, ecdb: EntityComponentDatabase[RogueComponentUnion]
-) -> typing.Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
+) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
     if isinstance(system, DoNotChangeEntityComponentDatabaseTrait):
         feedback = system(ecdb=ecdb)
     elif isinstance(system, ReturnEntityComponentDatabaseTrait):
@@ -259,7 +266,7 @@ def process_system(
 
 def process_systems(
     *, ecdb: EntityComponentDatabase[RogueComponentUnion], systems: Systems[SystemUnion]
-) -> typing.Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
+) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
 
     old_ecdb = ecdb
     feedback = SystemFeedback.NoFeedback
