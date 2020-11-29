@@ -203,6 +203,9 @@ class PygameHeroControlSystem(YieldEntityComponentDatabaseTrait):
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
     ) -> Generator[Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback], None, None]:
 
+        # Query the hero once
+        hero = first(first(query_entities(ecdb=ecdb, filter_function=is_hero)))
+
         while True:
             for event in pygame.event.get():
 
@@ -213,7 +216,6 @@ class PygameHeroControlSystem(YieldEntityComponentDatabaseTrait):
                 if event.type != pygame.KEYDOWN:
                     yield ecdb, SystemFeedback.IgnorePygameEvent
                 else:
-                    hero = first(first(query_entities(ecdb=ecdb, filter_function=is_hero)))
                     hero_velocity_y, hero_velocity_x = 0, 0
 
                     if event.key == pygame.K_LEFT:
