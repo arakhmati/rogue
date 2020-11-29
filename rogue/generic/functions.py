@@ -23,4 +23,5 @@ def type_to_str(klass: Type[Any]) -> str:
     return klass.__name__
 
 
-TemplateClass = TypeVar("TemplateClass")
+def type_of_value_to_str(value: Any) -> str:
+    return type_to_str(type(value))

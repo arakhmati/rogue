@@ -49,7 +49,7 @@ class EntityComponentDatabase(Generic[ComponentTemplate], pyrsistent.PClass):
 
 
 class QueryFunction(Protocol):
-    def __call__(self, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity) -> bool:
+    def __call__(self, components: Iterable[ComponentTemplate]) -> bool:
         ...
 
 
@@ -95,12 +95,6 @@ def add_component(
     return ecdb.set(_entities=new_entities, _components=new_components)
 
 
-def query_components_of_entity(
-    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity
-) -> MapFromComponentStrToComponent[ComponentTemplate]:
-    return ecdb._entities[entity]  # pylint: disable=protected-access
-
-
 def query_entities(
     *,
     ecdb: EntityComponentDatabase[ComponentTemplate],
@@ -110,7 +104,7 @@ def query_entities(
     for entity, components in ecdb._entities.items():  # pylint: disable=protected-access
 
         if query_function is not None:
-            if not query_function(ecdb=ecdb, entity=entity):
+            if not query_function(components=components.values()):
                 continue
 
         requested_components: Tuple[Optional[ComponentTemplate], ...]

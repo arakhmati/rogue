@@ -2,35 +2,26 @@
 Rogue-specific query functions
 """
 
-from rogue.generic.ecs import Entity, EntityComponentDatabase, ComponentTemplate
-from rogue.generic.ecs import query_components_of_entity
+from typing import Iterable
+
+from rogue.generic.ecs import ComponentTemplate
+from rogue.generic.functions import type_of_value_to_str
+
+ENTITY_TYPE_TO_COMPONENTS = {
+    "hero": {"AppearanceComponent", "PositionComponent", "VelocityComponent", "MoneyComponent", "HealthComponent"},
+    "enemy": {"AppearanceComponent", "PositionComponent", "VelocityComponent", "HealthComponent"},
+}
 
 
-def is_of_type(ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, entity_type: str) -> bool:
-
-    entity_components = query_components_of_entity(ecdb=ecdb, entity=entity)
-
-    if entity_type == "hero":
-        return set(entity_components.keys()) == {
-            "AppearanceComponent",
-            "PositionComponent",
-            "VelocityComponent",
-            "MoneyComponent",
-            "HealthComponent",
-        }
-    if entity_type == "enemy":
-        return set(entity_components.keys()) == {
-            "AppearanceComponent",
-            "PositionComponent",
-            "VelocityComponent",
-            "HealthComponent",
-        }
-    return False
+def is_of_type(components: Iterable[ComponentTemplate], entity_type: str) -> bool:
+    component_types_as_str = {type_of_value_to_str(component) for component in components}
+    expected_component_types_as_str = ENTITY_TYPE_TO_COMPONENTS.get(entity_type, set())
+    return component_types_as_str == expected_component_types_as_str
 
 
-def is_hero(ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity) -> bool:
-    return is_of_type(ecdb=ecdb, entity=entity, entity_type="hero")
+def is_hero(components: Iterable[ComponentTemplate]) -> bool:
+    return is_of_type(components=components, entity_type="hero")
 
 
-def is_enemy(ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity) -> bool:
-    return is_of_type(ecdb=ecdb, entity=entity, entity_type="enemy")
+def is_enemy(components: Iterable[ComponentTemplate]) -> bool:
+    return is_of_type(components=components, entity_type="enemy")
