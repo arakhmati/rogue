@@ -1,7 +1,7 @@
 import abc
 import enum
 import random
-from collections import deque
+from collections import deque, Counter as counter
 from typing import (
     cast,
     Optional,
@@ -11,6 +11,9 @@ from typing import (
     List,
     Type,
     Deque,
+    Dict,
+    Counter,
+    Set,
 )
 
 import attr
@@ -26,6 +29,7 @@ from rogue.generic.ecs import (
     add_component,
     query_entities,
     get_systems,
+    Entity,
 )
 from rogue.components import (
     RogueComponentUnion,
@@ -40,6 +44,9 @@ class SystemFeedback(enum.Enum):
     NoFeedback = enum.auto()
     IgnorePygameEvent = enum.auto()
     QuitGame = enum.auto()
+
+
+ZERO_VELOCITY_COMPONENT = VelocityComponent.create_from_attributes(x_axis=0, y_axis=0)
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -136,8 +143,6 @@ class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
 
 @attr.s(frozen=True, kw_only=True)
 class MovementSystem(ReturnEntityComponentDatabaseTrait):
-    ZERO_VELOCITY_COMPONENT = VelocityComponent.create_from_attributes(x_axis=0, y_axis=0)
-
     @classmethod
     def create(cls) -> "MovementSystem":
         return cls()
@@ -162,7 +167,7 @@ class MovementSystem(ReturnEntityComponentDatabaseTrait):
 
             new_position_component: PositionComponent = evolve(position_component, y_axis=y_axis, x_axis=x_axis)
             ecdb = add_component(ecdb=ecdb, entity=entity, component=new_position_component)
-            ecdb = add_component(ecdb=ecdb, entity=entity, component=MovementSystem.ZERO_VELOCITY_COMPONENT)
+            ecdb = add_component(ecdb=ecdb, entity=entity, component=ZERO_VELOCITY_COMPONENT)
 
         return ecdb, SystemFeedback.NoFeedback
 
@@ -240,7 +245,96 @@ class PygameHeroControlSystem(YieldEntityComponentDatabaseTrait):
                     yield ecdb, SystemFeedback.NoFeedback
 
 
-SystemUnion = Union[PygcurseRenderSystem, MovementSystem, EnemyAISystem, PygameHeroControlSystem]
+@attr.s(frozen=True, kw_only=True)
+class CollisionDetectionSystem(ReturnEntityComponentDatabaseTrait):
+    @classmethod
+    def create(cls) -> "CollisionDetectionSystem":
+        return cls()
+
+    @staticmethod
+    def _analyze(
+        *, ecdb: EntityComponentDatabase[RogueComponentUnion]
+    ) -> Tuple[Counter[Tuple[int, int]], Dict[Tuple[int, int], Set[Tuple[Entity, bool]]]]:
+        grid: Counter[Tuple[int, int]] = counter()
+        coordinates_to_entities: Dict[Tuple[int, int], Set[Tuple[Entity, bool]]] = {}
+
+        component_types: List[Type[RogueComponentUnion]] = [PositionComponent, VelocityComponent, SizeComponent]
+        for entity, components in query_entities(ecdb=ecdb, component_types=component_types):
+            position_component = cast(Optional[PositionComponent], components[0])
+            velocity_component = cast(Optional[VelocityComponent], components[1])
+            size_component = cast(Optional[SizeComponent], components[2])
+
+            assert position_component is not None
+            if size_component is not None:
+
+                for y_coordinate in range(
+                    position_component.y_axis, position_component.y_axis + size_component.height + 1
+                ):
+                    for x_coordinate in [position_component.x_axis, position_component.x_axis + size_component.width]:
+                        grid_position = (y_coordinate, x_coordinate)
+                        grid[grid_position] += 1
+                for x_coordinate in range(
+                    position_component.x_axis, position_component.x_axis + size_component.width + 1
+                ):
+                    for y_coordinate in [position_component.y_axis, position_component.y_axis + size_component.height]:
+                        grid_position = (y_coordinate, x_coordinate)
+                        grid[grid_position] += 1
+
+            elif velocity_component is not None:
+                y_axis = position_component.y_axis + velocity_component.y_axis
+                x_axis = position_component.x_axis + velocity_component.x_axis
+                grid_position = (y_axis, x_axis)
+
+                set_of_entities = coordinates_to_entities.get(grid_position, set())
+                set_of_entities.add((entity, True))
+                coordinates_to_entities[grid_position] = set_of_entities
+
+                grid[grid_position] += 1
+
+            else:
+                grid_position = (position_component.y_axis, position_component.x_axis)
+
+                set_of_entities = coordinates_to_entities.get(grid_position, set())
+                set_of_entities.add((entity, False))
+                coordinates_to_entities[grid_position] = set_of_entities
+
+                grid[grid_position] += 1
+
+        return grid, coordinates_to_entities
+
+    @staticmethod
+    def _process(
+        *,
+        ecdb: EntityComponentDatabase[RogueComponentUnion],
+        grid: Counter[Tuple[int, int]],
+        coordinates_to_entities: Dict[Tuple[int, int], Set[Tuple[Entity, bool]]],
+    ) -> EntityComponentDatabase[RogueComponentUnion]:
+        for coordinates, count in grid.most_common():
+            if count <= 1:
+                break
+
+            for entity, has_velocity_component in coordinates_to_entities.get(coordinates, []):
+                if not has_velocity_component:
+                    continue
+
+                # Do not move the entity
+                ecdb = add_component(ecdb=ecdb, entity=entity, component=ZERO_VELOCITY_COMPONENT)
+
+        return ecdb
+
+    def __call__(
+        self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
+    ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
+
+        grid, coordinates_to_entities = self._analyze(ecdb=ecdb)
+        ecdb = self._process(ecdb=ecdb, grid=grid, coordinates_to_entities=coordinates_to_entities)
+
+        return ecdb, SystemFeedback.NoFeedback
+
+
+SystemUnion = Union[
+    PygcurseRenderSystem, MovementSystem, EnemyAISystem, PygameHeroControlSystem, CollisionDetectionSystem
+]
 
 
 def process_system(
