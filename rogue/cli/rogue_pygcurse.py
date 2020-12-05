@@ -11,8 +11,8 @@ from rogue.systems import (
     EnemyAISystem,
     PygameHeroControlSystem,
     CollisionDetectionSystem,
-    SystemFeedback,
 )
+from rogue.exceptions import QuitGameException, IgnoreTimeStepException
 
 
 def create_rogue_systems(*, window_height: int, window_width: int) -> Systems[SystemUnion]:
@@ -36,6 +36,9 @@ def rogue_pygcurse(*, input_file_name: pathlib.Path, window_height: int, window_
     systems = create_rogue_systems(window_height=window_height, window_width=window_width)
 
     while True:
-        ecdb, feedback = process_systems(ecdb=ecdb, systems=systems)
-        if feedback == SystemFeedback.QuitGame:
+        try:
+            ecdb = process_systems(ecdb=ecdb, systems=systems)
+        except QuitGameException:
             return
+        except IgnoreTimeStepException:
+            continue

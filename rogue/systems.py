@@ -1,5 +1,4 @@
 import abc
-import enum
 import random
 from collections import deque, Counter as counter
 from typing import (
@@ -39,43 +38,30 @@ from rogue.components import (
     SizeComponent,
 )
 
-
-class SystemFeedback(enum.Enum):
-    NoFeedback = enum.auto()
-    IgnorePygameEvent = enum.auto()
-    QuitGame = enum.auto()
+from rogue.exceptions import QuitGameException, IgnoreTimeStepException
 
 
 ZERO_VELOCITY_COMPONENT = VelocityComponent.create_from_attributes(x_axis=0, y_axis=0)
 
 
 @attr.s(frozen=True, kw_only=True)
-class DoNotChangeEntityComponentDatabaseTrait(abc.ABC):
+class NoReturnSystemTrait(abc.ABC):
     @abc.abstractmethod
-    def __call__(self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]) -> SystemFeedback:
+    def __call__(self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]) -> None:
         ...
 
 
 @attr.s(frozen=True, kw_only=True)
-class ReturnEntityComponentDatabaseTrait:
-    @abc.abstractmethod
-    def __call__(
-        self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
-        ...
-
-
-@attr.s(frozen=True, kw_only=True)
-class YieldEntityComponentDatabaseTrait:
+class YieldChangesSystemTrait:
     @abc.abstractmethod
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> Generator[Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback], None, None]:
+    ) -> Generator[Tuple[Entity, RogueComponentUnion], None, None]:
         ...
 
 
 @attr.s(frozen=True, kw_only=True)
-class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
+class PygcurseRenderSystem(NoReturnSystemTrait):
     window: pygcurse.PygcurseWindow = attr.ib()
 
     @classmethod
@@ -83,7 +69,7 @@ class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
         window = pygcurse.PygcurseWindow(width=width, height=height)
         return PygcurseRenderSystem(window=window)
 
-    def __call__(self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]) -> SystemFeedback:
+    def __call__(self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]) -> None:
 
         dynamic_entities: Deque[Tuple[PositionComponent, AppearanceComponent]] = deque(maxlen=None)
 
@@ -138,18 +124,16 @@ class PygcurseRenderSystem(DoNotChangeEntityComponentDatabaseTrait):
                 fgcolor=appearance_component.color,
             )
 
-        return SystemFeedback.NoFeedback
-
 
 @attr.s(frozen=True, kw_only=True)
-class MovementSystem(ReturnEntityComponentDatabaseTrait):
+class MovementSystem(YieldChangesSystemTrait):
     @classmethod
     def create(cls) -> "MovementSystem":
         return cls()
 
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
+    ) -> Generator[Tuple[Entity, RogueComponentUnion], None, None]:
 
         component_types: List[Type[RogueComponentUnion]] = [PositionComponent, VelocityComponent]
         for entity, components in query_entities(ecdb=ecdb, component_types=component_types):
@@ -166,14 +150,12 @@ class MovementSystem(ReturnEntityComponentDatabaseTrait):
             x_axis = position_component.x_axis + velocity_component.x_axis
 
             new_position_component: PositionComponent = evolve(position_component, y_axis=y_axis, x_axis=x_axis)
-            ecdb = add_component(ecdb=ecdb, entity=entity, component=new_position_component)
-            ecdb = add_component(ecdb=ecdb, entity=entity, component=ZERO_VELOCITY_COMPONENT)
-
-        return ecdb, SystemFeedback.NoFeedback
+            yield entity, new_position_component
+            yield entity, ZERO_VELOCITY_COMPONENT
 
 
 @attr.s(frozen=True, kw_only=True)
-class EnemyAISystem(ReturnEntityComponentDatabaseTrait):
+class EnemyAISystem(YieldChangesSystemTrait):
     @classmethod
     def create(cls) -> "EnemyAISystem":
         return cls()
@@ -187,66 +169,61 @@ class EnemyAISystem(ReturnEntityComponentDatabaseTrait):
 
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
+    ) -> Generator[Tuple[Entity, RogueComponentUnion], None, None]:
         for entity, _ in query_entities(ecdb=ecdb, filter_function=is_enemy):
             random_value = random.randint(0, len(EnemyAISystem.RANDOM_VALUE_TO_YX) - 1)
             y_axis, x_axis = EnemyAISystem.RANDOM_VALUE_TO_YX[random_value]
 
             velocity_component = VelocityComponent.create_from_attributes(y_axis=y_axis, x_axis=x_axis)
-            ecdb = add_component(ecdb=ecdb, entity=entity, component=velocity_component)
-
-        return ecdb, SystemFeedback.NoFeedback
+            yield entity, velocity_component
 
 
 @attr.s(frozen=True, kw_only=True)
-class PygameHeroControlSystem(YieldEntityComponentDatabaseTrait):
+class PygameHeroControlSystem(YieldChangesSystemTrait):
     @classmethod
     def create(cls) -> "PygameHeroControlSystem":
         return cls()
 
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> Generator[Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback], None, None]:
+    ) -> Generator[Tuple[Entity, RogueComponentUnion], None, None]:
 
         # Query the hero once
         hero = first(first(query_entities(ecdb=ecdb, filter_function=is_hero)))
 
-        while True:
-            for event in pygame.event.get():
+        for event in pygame.event.get():
 
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    yield ecdb, SystemFeedback.QuitGame
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                raise QuitGameException
 
-                if event.type != pygame.KEYDOWN:
-                    yield ecdb, SystemFeedback.IgnorePygameEvent
-                else:
-                    hero_velocity_y, hero_velocity_x = 0, 0
+            if event.type != pygame.KEYDOWN:
+                raise IgnoreTimeStepException
 
-                    if event.key == pygame.K_LEFT:
-                        hero_velocity_x = -1
-                    elif event.key == pygame.K_RIGHT:
-                        hero_velocity_x = 1
-                    elif event.key == pygame.K_UP:
-                        hero_velocity_y = -1
-                    elif event.key == pygame.K_DOWN:
-                        hero_velocity_y = 1
-                    elif event.key == pygame.K_ESCAPE:
-                        pygame.quit()
-                        yield ecdb, SystemFeedback.QuitGame
+            hero_velocity_y, hero_velocity_x = 0, 0
 
-                    ecdb = add_component(
-                        ecdb=ecdb,
-                        entity=hero,
-                        component=VelocityComponent.create_from_attributes(
-                            y_axis=hero_velocity_y, x_axis=hero_velocity_x
-                        ),
-                    )
-                    yield ecdb, SystemFeedback.NoFeedback
+            if event.key == pygame.K_LEFT:
+                hero_velocity_x = -1
+            elif event.key == pygame.K_RIGHT:
+                hero_velocity_x = 1
+            elif event.key == pygame.K_UP:
+                hero_velocity_y = -1
+            elif event.key == pygame.K_DOWN:
+                hero_velocity_y = 1
+            elif event.key == pygame.K_ESCAPE:
+                pygame.quit()
+                raise QuitGameException
+            else:
+                raise IgnoreTimeStepException
+
+            yield hero, VelocityComponent.create_from_attributes(y_axis=hero_velocity_y, x_axis=hero_velocity_x)
+            return
+
+        raise IgnoreTimeStepException
 
 
 @attr.s(frozen=True, kw_only=True)
-class CollisionDetectionSystem(ReturnEntityComponentDatabaseTrait):
+class CollisionDetectionSystem(YieldChangesSystemTrait):
     @classmethod
     def create(cls) -> "CollisionDetectionSystem":
         return cls()
@@ -273,6 +250,7 @@ class CollisionDetectionSystem(ReturnEntityComponentDatabaseTrait):
                     for x_coordinate in [position_component.x_axis, position_component.x_axis + size_component.width]:
                         grid_position = (y_coordinate, x_coordinate)
                         grid[grid_position] += 1
+
                 for x_coordinate in range(
                     position_component.x_axis, position_component.x_axis + size_component.width + 1
                 ):
@@ -303,33 +281,26 @@ class CollisionDetectionSystem(ReturnEntityComponentDatabaseTrait):
         return grid, coordinates_to_entities
 
     @staticmethod
-    def _process(
-        *,
-        ecdb: EntityComponentDatabase[RogueComponentUnion],
-        grid: Counter[Tuple[int, int]],
-        coordinates_to_entities: Dict[Tuple[int, int], Set[Tuple[Entity, bool]]],
-    ) -> EntityComponentDatabase[RogueComponentUnion]:
+    def _transform(
+        *, grid: Counter[Tuple[int, int]], coordinates_to_entities: Dict[Tuple[int, int], Set[Tuple[Entity, bool]]],
+    ) -> Generator[Tuple[Entity, RogueComponentUnion], None, None]:
         for coordinates, count in grid.most_common():
             if count <= 1:
-                break
+                return
 
             for entity, has_velocity_component in coordinates_to_entities.get(coordinates, []):
                 if not has_velocity_component:
                     continue
 
                 # Do not move the entity
-                ecdb = add_component(ecdb=ecdb, entity=entity, component=ZERO_VELOCITY_COMPONENT)
-
-        return ecdb
+                yield entity, ZERO_VELOCITY_COMPONENT
 
     def __call__(
         self, *, ecdb: EntityComponentDatabase[RogueComponentUnion]
-    ) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
+    ) -> Generator[Tuple[Entity, RogueComponentUnion], None, None]:
 
         grid, coordinates_to_entities = self._analyze(ecdb=ecdb)
-        ecdb = self._process(ecdb=ecdb, grid=grid, coordinates_to_entities=coordinates_to_entities)
-
-        return ecdb, SystemFeedback.NoFeedback
+        yield from self._transform(grid=grid, coordinates_to_entities=coordinates_to_entities)
 
 
 SystemUnion = Union[
@@ -339,30 +310,20 @@ SystemUnion = Union[
 
 def process_system(
     *, system: SystemUnion, ecdb: EntityComponentDatabase[RogueComponentUnion]
-) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
-    if isinstance(system, DoNotChangeEntityComponentDatabaseTrait):
-        feedback = system(ecdb=ecdb)
-    elif isinstance(system, ReturnEntityComponentDatabaseTrait):
-        ecdb, feedback = system(ecdb=ecdb)
-    elif isinstance(system, YieldEntityComponentDatabaseTrait):
-        output = next(system(ecdb=ecdb))
-        ecdb, feedback = output
+) -> EntityComponentDatabase[RogueComponentUnion]:
+    if isinstance(system, NoReturnSystemTrait):
+        system(ecdb=ecdb)
+    elif isinstance(system, YieldChangesSystemTrait):
+        for entity, component in system(ecdb=ecdb):
+            ecdb = add_component(ecdb=ecdb, entity=entity, component=component)
     else:
         raise ValueError(f"System of type {type(system)} does not support any of the system traits!")
-    return ecdb, feedback
+    return ecdb
 
 
 def process_systems(
     *, ecdb: EntityComponentDatabase[RogueComponentUnion], systems: Systems[SystemUnion]
-) -> Tuple[EntityComponentDatabase[RogueComponentUnion], SystemFeedback]:
-
-    old_ecdb = ecdb
-    feedback = SystemFeedback.NoFeedback
-
+) -> EntityComponentDatabase[RogueComponentUnion]:
     for system in get_systems(systems=systems):
-        ecdb, feedback = process_system(system=system, ecdb=ecdb)
-
-        if feedback in {SystemFeedback.IgnorePygameEvent, SystemFeedback.QuitGame}:
-            return old_ecdb, feedback
-
-    return ecdb, feedback
+        ecdb = process_system(system=system, ecdb=ecdb)
+    return ecdb
