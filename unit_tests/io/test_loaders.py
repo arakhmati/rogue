@@ -1,6 +1,6 @@
 import pathlib
 
-from pyrsistent import pmap, pset
+from pyrsistent import pmap
 
 from rogue.generic.ecs import (
     EntityComponentDatabase,
@@ -75,37 +75,6 @@ def test_load_rogue_ecdb_from_input_yaml(input_file_name=pathlib.Path("configs")
                         "MoneyComponent": MoneyComponent.create_from_attributes(amount=0),
                     }
                 ),
-            }
-        ),
-        _components=pmap(
-            {
-                "AppearanceComponent": pset(
-                    [
-                        Entity(unique_id=5),
-                        Entity(unique_id=1),
-                        Entity(unique_id=4),
-                        Entity(unique_id=7),
-                        Entity(unique_id=3),
-                        Entity(unique_id=6),
-                        Entity(unique_id=2),
-                    ]
-                ),
-                "PositionComponent": pset(
-                    [
-                        Entity(unique_id=5),
-                        Entity(unique_id=1),
-                        Entity(unique_id=4),
-                        Entity(unique_id=7),
-                        Entity(unique_id=3),
-                        Entity(unique_id=0),
-                        Entity(unique_id=6),
-                        Entity(unique_id=2),
-                    ]
-                ),
-                "VelocityComponent": pset([Entity(unique_id=2), Entity(unique_id=3)]),
-                "SizeComponent": pset([Entity(unique_id=0)]),
-                "HealthComponent": pset([Entity(unique_id=2), Entity(unique_id=3)]),
-                "MoneyComponent": pset([Entity(unique_id=3)]),
             }
         ),
     )

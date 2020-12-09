@@ -45,7 +45,6 @@ class EntityComponentDatabase(Generic[ComponentTemplate], pyrsistent.PClass):
     _entities: MapFromEntityToMapFromComponentStrToComponent[ComponentTemplate] = pyrsistent.field(
         initial=pyrsistent.pmap
     )
-    _components: MapFromComponentToSetOfEntities = pyrsistent.field(initial=pyrsistent.pmap)
 
 
 class FilterFunction(Protocol):
@@ -80,19 +79,15 @@ def add_entity(
 def add_component(
     *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component: ComponentTemplate
 ) -> EntityComponentDatabase[ComponentTemplate]:
-    component_type_str = type_to_str(type(component))
+    component_type = type(component)
+    component_type_str = type_to_str(component_type)
 
     entities = ecdb._entities  # pylint: disable=protected-access
     entity_components = entities.get(entity, pyrsistent.pmap())
     new_entity_components = entity_components.set(component_type_str, component)
     new_entities = entities.set(entity, new_entity_components)
 
-    components = ecdb._components  # pylint: disable=protected-access
-    component_entities = components.get(component_type_str, pyrsistent.pset())
-    new_component_entities = component_entities.add(entity)
-    new_components = components.set(component_type_str, new_component_entities)
-
-    return ecdb.set(_entities=new_entities, _components=new_components)
+    return ecdb.set(_entities=new_entities)
 
 
 def query_entities(
