@@ -1,11 +1,10 @@
 import pathlib
 
 from rogue.io.loaders import load_rogue_ecdb_from_input_yaml
-from rogue.generic.ecs import create_systems, add_system
+from rogue.generic.ecs import Systems, create_systems, add_system, process_systems
 from rogue.systems import (
-    Systems,
     SystemUnion,
-    process_systems,
+    process_system,
     PygcurseRenderSystem,
     MovementSystem,
     EnemyAISystem,
@@ -37,7 +36,7 @@ def rogue_pygcurse(*, input_file_name: pathlib.Path, window_height: int, window_
 
     while True:
         try:
-            ecdb = process_systems(ecdb=ecdb, systems=systems)
+            ecdb = process_systems(ecdb=ecdb, systems=systems, process_system=process_system)
         except QuitGameException:
             return
         except IgnoreTimeStepException:

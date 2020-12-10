@@ -2,26 +2,29 @@
 Rogue-specific filter functions
 """
 
-from typing import Iterable
+from typing import cast
 
-from rogue.generic.ecs import ComponentTemplate
-from rogue.generic.functions import type_of_value_to_str
-
-ENTITY_TYPE_TO_COMPONENTS = {
-    "hero": {"AppearanceComponent", "PositionComponent", "VelocityComponent", "MoneyComponent", "HealthComponent"},
-    "enemy": {"AppearanceComponent", "PositionComponent", "VelocityComponent", "HealthComponent"},
-}
+from rogue.generic.ecs import ComponentTemplate, MapFromComponentTypeToOptionalComponent
+from rogue.components import TypeComponent, ComponentUnion
 
 
-def is_of_type(components: Iterable[ComponentTemplate], entity_type: str) -> bool:
-    component_types_as_str = {type_of_value_to_str(component) for component in components}
-    expected_component_types_as_str = ENTITY_TYPE_TO_COMPONENTS.get(entity_type, set())
-    return component_types_as_str == expected_component_types_as_str
+def _is_of_type(components: MapFromComponentTypeToOptionalComponent[ComponentTemplate], entity_type: str) -> bool:
+
+    rogue_components = cast(MapFromComponentTypeToOptionalComponent[ComponentUnion], components)
+    entity_type_component = rogue_components[TypeComponent]
+
+    actual_entity_type = cast(TypeComponent, entity_type_component).entity_type
+
+    if entity_type == actual_entity_type:
+        return True
+    if entity_type == "enemy" and actual_entity_type in {"hobgoblin"}:
+        return True
+    return False
 
 
-def is_hero(components: Iterable[ComponentTemplate]) -> bool:
-    return is_of_type(components=components, entity_type="hero")
+def is_hero(components: MapFromComponentTypeToOptionalComponent[ComponentTemplate]) -> bool:
+    return _is_of_type(components=components, entity_type="hero")
 
 
-def is_enemy(components: Iterable[ComponentTemplate]) -> bool:
-    return is_of_type(components=components, entity_type="enemy")
+def is_enemy(components: MapFromComponentTypeToOptionalComponent[ComponentTemplate]) -> bool:
+    return _is_of_type(components=components, entity_type="enemy")

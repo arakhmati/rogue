@@ -1,6 +1,10 @@
-from typing import Union
+from typing import Union, Iterable
 
 import attr
+import pyrsistent
+from pyrsistent.typing import PSet
+
+from rogue.generic.ecs import Entity
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -34,13 +38,12 @@ class SizeComponent:
 
 
 @attr.s(frozen=True, kw_only=True)
-class AppearanceComponent:
-    symbol: str = attr.ib()
-    color: str = attr.ib()
+class TypeComponent:
+    entity_type: str = attr.ib()
 
     @classmethod
-    def create_from_attributes(cls, *, symbol: str, color: str) -> "AppearanceComponent":
-        return cls(symbol=symbol, color=color)
+    def create_from_attributes(cls, *, entity_type: str) -> "TypeComponent":
+        return cls(entity_type=entity_type)
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -70,12 +73,32 @@ class DamageComponent:
         return cls(damage=damage)
 
 
-RogueComponentUnion = Union[
+@attr.s(frozen=True, kw_only=True)
+class InventoryComponent:
+    entities: PSet[Entity] = attr.ib()
+
+    @classmethod
+    def create_from_attributes(cls, *, entities: Iterable[Entity]) -> "InventoryComponent":
+        return cls(entities=pyrsistent.pset(entities))
+
+
+@attr.s(frozen=True, kw_only=True)
+class EquipmentComponent:
+    entities: PSet[Entity] = attr.ib()
+
+    @classmethod
+    def create_from_attributes(cls, *, entities: Iterable[Entity]) -> "EquipmentComponent":
+        return cls(entities=pyrsistent.pset(entities))
+
+
+ComponentUnion = Union[
     PositionComponent,
     VelocityComponent,
     SizeComponent,
-    AppearanceComponent,
+    TypeComponent,
     MoneyComponent,
     HealthComponent,
     DamageComponent,
+    InventoryComponent,
+    EquipmentComponent,
 ]

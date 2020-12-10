@@ -12,7 +12,7 @@
       strengh: 50
     - type: gold
       coordinates: 5, 3
-      value: 50
+      amount: 50
     - type: door
       coordinates: 0, 8
     - type: door

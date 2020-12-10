@@ -12,13 +12,15 @@ import yaml
 
 from rogue.generic.ecs import EntityComponentDatabase, create_ecdb, add_entity
 from rogue.components import (
-    RogueComponentUnion,
+    ComponentUnion,
     PositionComponent,
     SizeComponent,
-    AppearanceComponent,
+    TypeComponent,
     VelocityComponent,
     MoneyComponent,
     HealthComponent,
+    InventoryComponent,
+    EquipmentComponent,
 )
 
 RoomConfig = Dict[Any, Any]
@@ -42,51 +44,40 @@ def _parse_size(size: str) -> Dict[str, int]:
     return {"height": height, "width": width}
 
 
-def _type_to_appearance(item_type: str) -> Dict[str, str]:
-    item_type_to_appearance = {
-        "hero": ("#", "purple"),
-        "sword": ("(", "green"),
-        "hobgoblin": ("H", "red"),
-        "potion": ("!", "blue"),
-        "gold": ("*", "gold"),
-        "door": ("+", "grey"),
-    }
-
-    symbol, color = item_type_to_appearance[item_type]
-
-    return {
-        "symbol": symbol,
-        "color": color,
-    }
-
-
-def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path,) -> EntityComponentDatabase[RogueComponentUnion]:
+def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path,) -> EntityComponentDatabase[ComponentUnion]:
 
     logger.info(f"Input file: {input_file_name}")
 
     room_config = _load_room_config(input_file_name=input_file_name)
     logger.info(f"Room Config: {pprint.pformat(room_config)}")
 
-    ecdb: EntityComponentDatabase[RogueComponentUnion] = create_ecdb()
+    ecdb: EntityComponentDatabase[ComponentUnion] = create_ecdb()
     for room in room_config:
         room_coordinates = _parse_coordinates(room["coordinates"])
-        room_components: List[RogueComponentUnion] = [
+        room_components: List[ComponentUnion] = [
             PositionComponent.create_from_attributes(**room_coordinates),
             SizeComponent.create_from_attributes(**_parse_size(room["size"])),
+            TypeComponent.create_from_attributes(entity_type="room"),
         ]
         ecdb, _ = add_entity(ecdb=ecdb, components=room_components)
         for item in room["items"]:
-            components: List[RogueComponentUnion] = [
+            components: List[ComponentUnion] = [
                 PositionComponent.create_from_attributes(**_parse_coordinates(item["coordinates"], **room_coordinates)),
-                AppearanceComponent.create_from_attributes(**_type_to_appearance(item["type"])),
+                TypeComponent.create_from_attributes(entity_type=item["type"]),
             ]
             if item["type"] == "hero":
                 components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
                 components.append(HealthComponent.create_from_attributes(amount=100))
                 components.append(MoneyComponent.create_from_attributes(amount=0))
+                components.append(InventoryComponent.create_from_attributes(entities=[]))
+                components.append(EquipmentComponent.create_from_attributes(entities=[]))
             elif item["type"] in {"hobgoblin"}:
                 components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
                 components.append(HealthComponent.create_from_attributes(amount=100))
+                components.append(InventoryComponent.create_from_attributes(entities=[]))
+                components.append(EquipmentComponent.create_from_attributes(entities=[]))
+            elif item["type"] in {"gold"}:
+                components.append(MoneyComponent.create_from_attributes(amount=item["amount"]))
 
             ecdb, _ = add_entity(ecdb=ecdb, components=components)
 

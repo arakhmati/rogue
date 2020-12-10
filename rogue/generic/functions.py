@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Type,
     TypeVar,
 )
 
@@ -17,11 +16,3 @@ def evolve(instance: InstanceType, **changes: Any) -> InstanceType:
     if is_attr_class(instance):
         return attr.evolve(instance, **changes)
     raise ValueError(f"No implementation of evolve for {type(instance)}")
-
-
-def type_to_str(klass: Type[Any]) -> str:
-    return klass.__name__
-
-
-def type_of_value_to_str(value: Any) -> str:
-    return type_to_str(type(value))

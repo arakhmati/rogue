@@ -6,6 +6,7 @@ In this file, access to private members of EntityComponentDatabase[Component] cl
 
 
 from typing import (
+    cast,
     Protocol,
     Generic,
     Type,
@@ -14,12 +15,12 @@ from typing import (
     Optional,
     Tuple,
     Generator,
+    Any,
 )
 
 import attr
-import pyrsistent.typing
-
-from rogue.generic.functions import type_to_str
+import pyrsistent
+from pyrsistent.typing import PMap, PSet
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -27,28 +28,23 @@ class Entity:
     unique_id: int = attr.ib()
 
 
-SetOfEntities = pyrsistent.typing.PSet[Entity]
-
 ComponentTemplate = TypeVar("ComponentTemplate")
 IterableOfComponents = Iterable[ComponentTemplate]
-SetOfComponents = pyrsistent.typing.PSet[ComponentTemplate]
-ComponentStr = str
-MapFromComponentStrToComponent = pyrsistent.typing.PMap[ComponentStr, ComponentTemplate]
-MapFromEntityToMapFromComponentStrToComponent = pyrsistent.typing.PMap[
-    Entity, MapFromComponentStrToComponent[ComponentTemplate]
-]
-MapFromComponentToSetOfEntities = pyrsistent.typing.PMap[ComponentStr, SetOfEntities]
+SetOfComponents = PSet[ComponentTemplate]
+MapFromComponentTypeToComponent = PMap[Type[ComponentTemplate], ComponentTemplate]
+MapFromComponentTypeToOptionalComponent = PMap[Type[ComponentTemplate], Optional[ComponentTemplate]]
+MapFromEntityToMapFromComponentTypeToComponent = PMap[Entity, MapFromComponentTypeToComponent[ComponentTemplate]]
 
 
 class EntityComponentDatabase(Generic[ComponentTemplate], pyrsistent.PClass):
     _last_unique_id: int = pyrsistent.field(mandatory=True)
-    _entities: MapFromEntityToMapFromComponentStrToComponent[ComponentTemplate] = pyrsistent.field(
+    _entities: MapFromEntityToMapFromComponentTypeToComponent[ComponentTemplate] = pyrsistent.field(
         initial=pyrsistent.pmap
     )
 
 
 class FilterFunction(Protocol):
-    def __call__(self, components: Iterable[ComponentTemplate]) -> bool:
+    def __call__(self, components: MapFromComponentTypeToOptionalComponent[ComponentTemplate]) -> bool:
         ...
 
 
@@ -80,14 +76,36 @@ def add_component(
     *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component: ComponentTemplate
 ) -> EntityComponentDatabase[ComponentTemplate]:
     component_type = type(component)
-    component_type_str = type_to_str(component_type)
 
     entities = ecdb._entities  # pylint: disable=protected-access
     entity_components = entities.get(entity, pyrsistent.pmap())
-    new_entity_components = entity_components.set(component_type_str, component)
+    new_entity_components = entity_components.set(component_type, component)
     new_entities = entities.set(entity, new_entity_components)
 
     return ecdb.set(_entities=new_entities)
+
+
+def remove_component(
+    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component_type: Type[ComponentTemplate]
+) -> EntityComponentDatabase[ComponentTemplate]:
+
+    entities = ecdb._entities  # pylint: disable=protected-access
+    entity_components = entities.get(entity, pyrsistent.pmap())
+    new_entity_components = entity_components.remove(component_type)
+    new_entities = entities.set(entity, new_entity_components)
+
+    return ecdb.set(_entities=new_entities)
+
+
+def get_component(
+    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component_type: Type[ComponentTemplate]
+) -> Optional[ComponentTemplate]:
+
+    entities = ecdb._entities  # pylint: disable=protected-access
+    entity_components = entities.get(entity, pyrsistent.pmap())
+    component = entity_components.get(component_type)
+
+    return component
 
 
 def query_entities(
@@ -95,21 +113,24 @@ def query_entities(
     ecdb: EntityComponentDatabase[ComponentTemplate],
     component_types: Optional[Iterable[Type[ComponentTemplate]]] = None,
     filter_function: Optional[FilterFunction] = None,
-) -> Generator[Tuple[Entity, Tuple[Optional[ComponentTemplate], ...]], None, None]:
-    for entity, components in ecdb._entities.items():  # pylint: disable=protected-access
+) -> Generator[Tuple[Entity, MapFromComponentTypeToOptionalComponent[ComponentTemplate]], None, None]:
+    for entity, entity_components in ecdb._entities.items():  # pylint: disable=protected-access
+
+        components = cast(MapFromComponentTypeToOptionalComponent[ComponentTemplate], entity_components)
 
         if filter_function is not None:
-            if not filter_function(components=components.values()):
+            if not filter_function(components=components):
                 continue
 
-        requested_components: Tuple[Optional[ComponentTemplate], ...]
+        requested_components: MapFromComponentTypeToOptionalComponent[ComponentTemplate]
         if component_types is None:
-            requested_components = tuple(components.values())
+            requested_components = components
         else:
-            component_types_as_str = [type_to_str(component_type) for component_type in component_types]
-            requested_components = tuple(
-                components[component_type_str] if component_type_str in components else None
-                for component_type_str in component_types_as_str
+            requested_components = pyrsistent.pmap(
+                {
+                    component_type: components[component_type] if component_type in components else None
+                    for component_type in component_types
+                }
             )
 
         yield entity, requested_components
@@ -118,8 +139,8 @@ def query_entities(
 # Systems
 SystemPriority = int
 SystemTemplate = TypeVar("SystemTemplate")
-SetOfSystems = pyrsistent.typing.PSet[SystemTemplate]
-MapFromPriorityToSetOfSystems = pyrsistent.typing.PMap[SystemPriority, SetOfSystems[SystemTemplate]]
+SetOfSystems = PSet[SystemTemplate]
+MapFromPriorityToSetOfSystems = PMap[SystemPriority, SetOfSystems[SystemTemplate]]
 
 
 class Systems(Generic[SystemTemplate], pyrsistent.PClass):
@@ -146,6 +167,30 @@ def get_systems(*, systems: Systems[SystemTemplate]) -> Generator[SystemTemplate
     for _, systems_with_given_priority in systems._priority_to_systems.items():  # pylint: disable=protected-access
         for system in systems_with_given_priority:
             yield system
+
+
+# class ProcessSystemFunction(Protocol):
+#     def __call__(
+#         self, *, system: SystemTemplate, ecdb: EntityComponentDatabase[ComponentTemplate]
+#     ) -> EntityComponentDatabase[ComponentTemplate]:
+#         ...
+
+
+# TODO: use protocol above
+class ProcessSystemFunction(Protocol):
+    def __call__(self, *, system: Any, ecdb: Any) -> Any:
+        ...
+
+
+def process_systems(
+    *,
+    ecdb: EntityComponentDatabase[ComponentTemplate],
+    systems: Systems[SystemTemplate],
+    process_system: ProcessSystemFunction,
+) -> EntityComponentDatabase[ComponentTemplate]:
+    for system in get_systems(systems=systems):
+        ecdb = process_system(system=system, ecdb=ecdb)
+    return ecdb
 
 
 # Systems End
