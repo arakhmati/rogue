@@ -17,3 +17,9 @@
       coordinates: 0, 8
     - type: Door
       coordinates: 10, 19
+    - type: Dagger
+      coordinates: 9, 15
+    - type: Mace
+      coordinates: 9, 2
+    - type: DoubleSword
+      coordinates: 9, 10

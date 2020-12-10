@@ -22,39 +22,14 @@ from rogue.types import TypeEnum
 
 def test_load_rogue_ecdb_from_input_yaml(input_file_name=pathlib.Path("configs") / "sample_room_config.yaml",):
     expected_ecdb = EntityComponentDatabase(
-        _last_unique_id=8,
+        _last_unique_id=11,
         _entities=pmap(
             {
-                Entity(unique_id=4): pmap(
-                    {
-                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Potion),
-                        PositionComponent: PositionComponent.create_from_attributes(y_axis=21, x_axis=24),
-                    }
-                ),
-                Entity(unique_id=5): pmap(
-                    {
-                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Gold),
-                        PositionComponent: PositionComponent.create_from_attributes(y_axis=20, x_axis=23),
-                        MoneyComponent: MoneyComponent.create_from_attributes(amount=50),
-                    }
-                ),
                 Entity(unique_id=0): pmap(
                     {
                         PositionComponent: PositionComponent.create_from_attributes(y_axis=15, x_axis=20),
                         SizeComponent: SizeComponent.create_from_attributes(height=10, width=20),
                         TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Room),
-                    }
-                ),
-                Entity(unique_id=6): pmap(
-                    {
-                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Door),
-                        PositionComponent: PositionComponent.create_from_attributes(y_axis=15, x_axis=28),
-                    }
-                ),
-                Entity(unique_id=7): pmap(
-                    {
-                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Door),
-                        PositionComponent: PositionComponent.create_from_attributes(y_axis=25, x_axis=39),
                     }
                 ),
                 Entity(unique_id=1): pmap(
@@ -82,6 +57,49 @@ def test_load_rogue_ecdb_from_input_yaml(input_file_name=pathlib.Path("configs")
                         MoneyComponent: MoneyComponent.create_from_attributes(amount=0),
                         InventoryComponent: InventoryComponent.create_from_attributes(entities=[]),
                         EquipmentComponent: EquipmentComponent.create_from_attributes(entities=[]),
+                    }
+                ),
+                Entity(unique_id=4): pmap(
+                    {
+                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Potion),
+                        PositionComponent: PositionComponent.create_from_attributes(y_axis=21, x_axis=24),
+                    }
+                ),
+                Entity(unique_id=5): pmap(
+                    {
+                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Gold),
+                        PositionComponent: PositionComponent.create_from_attributes(y_axis=20, x_axis=23),
+                        MoneyComponent: MoneyComponent.create_from_attributes(amount=50),
+                    }
+                ),
+                Entity(unique_id=6): pmap(
+                    {
+                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Door),
+                        PositionComponent: PositionComponent.create_from_attributes(y_axis=15, x_axis=28),
+                    }
+                ),
+                Entity(unique_id=7): pmap(
+                    {
+                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Door),
+                        PositionComponent: PositionComponent.create_from_attributes(y_axis=25, x_axis=39),
+                    }
+                ),
+                Entity(unique_id=8): pmap(
+                    {
+                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Dagger),
+                        PositionComponent: PositionComponent.create_from_attributes(y_axis=24, x_axis=35),
+                    }
+                ),
+                Entity(unique_id=9): pmap(
+                    {
+                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Mace),
+                        PositionComponent: PositionComponent.create_from_attributes(y_axis=24, x_axis=22),
+                    }
+                ),
+                Entity(unique_id=10): pmap(
+                    {
+                        TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.DoubleSword),
+                        PositionComponent: PositionComponent.create_from_attributes(y_axis=24, x_axis=30),
                     }
                 ),
             }
