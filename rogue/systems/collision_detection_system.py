@@ -37,10 +37,11 @@ from rogue.systems.common.actions import (
 )
 from rogue.systems.common.traits import YieldChangesSystemTrait
 from rogue.systems.common.constants import ZERO_VELOCITY_COMPONENT
+from rogue.types import TypeEnum, ENEMY_TYPES, ITEM_TYPES
 
-
-Grid = Counter[Tuple[int, int]]
-CoordinatesToEntities = Dict[Tuple[int, int], Set[Tuple[Entity, str]]]
+Coordinates = Tuple[int, int]
+Grid = Counter[Coordinates]
+CoordinatesToEntities = Dict[Coordinates, Set[Tuple[Entity, TypeEnum]]]
 
 
 def _analyze_entity(
@@ -153,17 +154,17 @@ def _transform(
         if count <= 1:
             return
 
-        inventory_entity_and_type: Optional[Tuple[Entity, str]] = None
+        inventory_entity_and_type: Optional[Tuple[Entity, TypeEnum]] = None
         hero: Optional[Entity] = None
         moving_entities: Deque[Entity] = deque(maxlen=None)  # hero or monsters
 
         for entity, entity_type in coordinates_to_entities.get(coordinates, []):
-            if entity_type == "hero":
+            if entity_type == TypeEnum.Hero:
                 hero = entity
                 moving_entities.append(entity)
-            if entity_type in {"hobgoblin"}:
+            if entity_type in ENEMY_TYPES:
                 moving_entities.append(entity)
-            elif entity_type in {"gold", "potion", "sword"}:
+            elif entity_type in ITEM_TYPES:
                 inventory_entity_and_type = (entity, entity_type)
 
         # Don't do anything if there is no moving entities at this coordinate
@@ -177,7 +178,7 @@ def _transform(
             # Remove position component of the item, so that it's not rendered and nobody else can pick it up
             yield inventory_entity, RemoveComponentAction(component_type=PositionComponent)
 
-            if inventory_entity_type == "gold":
+            if inventory_entity_type == TypeEnum.Gold:
                 if hero is not None:
                     moving_entities.remove(hero)
                     yield from _pick_up_gold(ecdb=ecdb, hero=hero, inventory_entity=inventory_entity)

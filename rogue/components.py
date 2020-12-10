@@ -5,6 +5,7 @@ import pyrsistent
 from pyrsistent.typing import PSet
 
 from rogue.generic.ecs import Entity
+from rogue.types import TypeEnum
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -39,10 +40,10 @@ class SizeComponent:
 
 @attr.s(frozen=True, kw_only=True)
 class TypeComponent:
-    entity_type: str = attr.ib()
+    entity_type: TypeEnum = attr.ib()
 
     @classmethod
-    def create_from_attributes(cls, *, entity_type: str) -> "TypeComponent":
+    def create_from_attributes(cls, *, entity_type: TypeEnum) -> "TypeComponent":
         return cls(entity_type=entity_type)
 
 

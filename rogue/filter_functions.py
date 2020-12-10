@@ -2,29 +2,36 @@
 Rogue-specific filter functions
 """
 
-from typing import cast
+from typing import cast, Union
+
+
+import pyrsistent
+from pyrsistent.typing import PSet
 
 from rogue.generic.ecs import ComponentTemplate, MapFromComponentTypeToOptionalComponent
 from rogue.components import TypeComponent, ComponentUnion
+from rogue.types import TypeEnum, ENEMY_TYPES
 
 
-def _is_of_type(components: MapFromComponentTypeToOptionalComponent[ComponentTemplate], entity_type: str) -> bool:
+def _is_of_type(
+    components: MapFromComponentTypeToOptionalComponent[ComponentTemplate],
+    queried_entity_type: Union[TypeEnum, PSet[TypeEnum]],
+) -> bool:
 
-    rogue_components = cast(MapFromComponentTypeToOptionalComponent[ComponentUnion], components)
-    entity_type_component = rogue_components[TypeComponent]
+    if not isinstance(queried_entity_type, pyrsistent.PSet):
+        queried_entity_type = pyrsistent.s(queried_entity_type)
+
+    cast_components = cast(MapFromComponentTypeToOptionalComponent[ComponentUnion], components)
+    entity_type_component = cast_components[TypeComponent]
 
     actual_entity_type = cast(TypeComponent, entity_type_component).entity_type
 
-    if entity_type == actual_entity_type:
-        return True
-    if entity_type == "enemy" and actual_entity_type in {"hobgoblin"}:
-        return True
-    return False
+    return actual_entity_type in queried_entity_type
 
 
 def is_hero(components: MapFromComponentTypeToOptionalComponent[ComponentTemplate]) -> bool:
-    return _is_of_type(components=components, entity_type="hero")
+    return _is_of_type(components=components, queried_entity_type=TypeEnum.Hero)
 
 
 def is_enemy(components: MapFromComponentTypeToOptionalComponent[ComponentTemplate]) -> bool:
-    return _is_of_type(components=components, entity_type="enemy")
+    return _is_of_type(components=components, queried_entity_type=ENEMY_TYPES)

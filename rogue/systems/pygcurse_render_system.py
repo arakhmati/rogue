@@ -26,16 +26,17 @@ from rogue.components import (
     MoneyComponent,
 )
 from rogue.systems.common.traits import NoReturnSystemTrait
+from rogue.types import TypeEnum, TYPE_ENUM_TO_STRING
 
 
-def _type_to_appearance(item_type: str) -> Tuple[str, str]:
+def _type_to_appearance(item_type: TypeEnum) -> Tuple[str, str]:
     item_type_to_appearance = {
-        "hero": ("#", "purple"),
-        "sword": ("(", "green"),
-        "hobgoblin": ("H", "red"),
-        "potion": ("!", "blue"),
-        "gold": ("*", "gold"),
-        "door": ("+", "grey"),
+        TypeEnum.Hero: ("#", "purple"),
+        TypeEnum.Sword: ("(", "green"),
+        TypeEnum.Hobgoblin: ("H", "red"),
+        TypeEnum.Potion: ("!", "blue"),
+        TypeEnum.Gold: ("*", "gold"),
+        TypeEnum.Door: ("+", "grey"),
     }
     symbol, color = item_type_to_appearance[item_type]
     return symbol, color
@@ -93,7 +94,7 @@ def _render_hero_info(
 
     for item in inventory_component.entities:
         type_component = cast(TypeComponent, get_component(ecdb=ecdb, entity=item, component_type=TypeComponent))
-        window.write(text=f"    {type_component.entity_type}", x=x_offset, y=line, fgcolor="grey")
+        window.write(text=f"    {TYPE_ENUM_TO_STRING[type_component.entity_type]}", x=x_offset, y=line, fgcolor="grey")
         line += 1
 
     window.write(text="Equipment:", x=x_offset, y=line, fgcolor="grey")
@@ -138,5 +139,5 @@ class PygcurseRenderSystem(NoReturnSystemTrait):
                 symbol, x=position_component.x_axis, y=position_component.y_axis, fgcolor=color,
             )
 
-            if entity_type == "hero":
+            if entity_type == TypeEnum.Hero:
                 _render_hero_info(window=self.window, ecdb=ecdb, entity=entity)

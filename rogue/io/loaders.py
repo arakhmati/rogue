@@ -22,6 +22,7 @@ from rogue.components import (
     InventoryComponent,
     EquipmentComponent,
 )
+from rogue.types import TypeEnum, STRING_TO_TYPE_ENUM, ENEMY_TYPES
 
 RoomConfig = Dict[Any, Any]
 
@@ -57,26 +58,27 @@ def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path,) -> EntityCom
         room_components: List[ComponentUnion] = [
             PositionComponent.create_from_attributes(**room_coordinates),
             SizeComponent.create_from_attributes(**_parse_size(room["size"])),
-            TypeComponent.create_from_attributes(entity_type="room"),
+            TypeComponent.create_from_attributes(entity_type=TypeEnum.Room),
         ]
         ecdb, _ = add_entity(ecdb=ecdb, components=room_components)
         for item in room["items"]:
+            entity_type = STRING_TO_TYPE_ENUM[item["type"]]
             components: List[ComponentUnion] = [
                 PositionComponent.create_from_attributes(**_parse_coordinates(item["coordinates"], **room_coordinates)),
-                TypeComponent.create_from_attributes(entity_type=item["type"]),
+                TypeComponent.create_from_attributes(entity_type=entity_type),
             ]
-            if item["type"] == "hero":
+            if entity_type == TypeEnum.Hero:
                 components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
                 components.append(HealthComponent.create_from_attributes(amount=100))
                 components.append(MoneyComponent.create_from_attributes(amount=0))
                 components.append(InventoryComponent.create_from_attributes(entities=[]))
                 components.append(EquipmentComponent.create_from_attributes(entities=[]))
-            elif item["type"] in {"hobgoblin"}:
+            elif entity_type in ENEMY_TYPES:
                 components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
                 components.append(HealthComponent.create_from_attributes(amount=100))
                 components.append(InventoryComponent.create_from_attributes(entities=[]))
                 components.append(EquipmentComponent.create_from_attributes(entities=[]))
-            elif item["type"] in {"gold"}:
+            elif entity_type == TypeEnum.Gold:
                 components.append(MoneyComponent.create_from_attributes(amount=item["amount"]))
 
             ecdb, _ = add_entity(ecdb=ecdb, components=components)
