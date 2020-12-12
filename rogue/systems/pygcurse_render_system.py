@@ -47,6 +47,8 @@ def _type_to_appearance(item_type: TypeEnum) -> Tuple[str, str]:
         TypeEnum.Hero: ("#", HERO_COLOR),
         # Enemies
         TypeEnum.Hobgoblin: ("H", ENEMY_COLOR),
+        TypeEnum.IceMonster: ("I", ENEMY_COLOR),
+        TypeEnum.Orc: ("O", ENEMY_COLOR),
         # Weapons
         TypeEnum.Dagger: ("D", WEAPON_COLOR),
         TypeEnum.Sword: ("S", WEAPON_COLOR),

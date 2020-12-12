@@ -23,3 +23,7 @@
       coordinates: 9, 2
     - type: DoubleSword
       coordinates: 9, 10
+    - type: IceMonster
+      coordinates: 6, 12
+    - type: Orc
+      coordinates: 2, 14

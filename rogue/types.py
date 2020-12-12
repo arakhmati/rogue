@@ -9,6 +9,8 @@ class TypeEnum(Enum):
 
     # Enemy Types
     Hobgoblin = auto()
+    IceMonster = auto()
+    Orc = auto()
 
     # Weapon Types
     Dagger = auto()
@@ -28,7 +30,7 @@ class TypeEnum(Enum):
 TYPE_ENUM_TO_STRING = {value: value.name for value in TypeEnum}
 STRING_TO_TYPE_ENUM = {value: key for key, value in TYPE_ENUM_TO_STRING.items()}
 
-ENEMY_TYPES = pyrsistent.s(TypeEnum.Hobgoblin)
+ENEMY_TYPES = pyrsistent.s(TypeEnum.Hobgoblin, TypeEnum.IceMonster, TypeEnum.Orc)
 
 WEAPON_TYPES = pyrsistent.s(TypeEnum.Dagger, TypeEnum.Mace, TypeEnum.Sword, TypeEnum.DoubleSword)
 
