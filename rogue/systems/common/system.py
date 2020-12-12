@@ -2,11 +2,13 @@ from typing import Union
 
 from rogue.generic.ecs import (
     EntityComponentDatabase,
+    remove_entity,
     add_component,
     remove_component,
 )
 from rogue.components import ComponentUnion
 from rogue.systems.common.actions import (
+    RemoveEntityAction,
     AddComponentAction,
     RemoveComponentAction,
 )
@@ -34,6 +36,10 @@ def process_system(
                 ecdb = add_component(ecdb=ecdb, entity=entity, component=action.component)
             elif isinstance(action, RemoveComponentAction):
                 ecdb = remove_component(ecdb=ecdb, entity=entity, component_type=action.component_type)
+            elif isinstance(action, RemoveEntityAction):
+                ecdb = remove_entity(ecdb=ecdb, entity=action.entity)
+            else:
+                raise ValueError(f"Unrecognized Action: {action}")
     else:
         raise ValueError(f"System of type {type(system)} does not support any of the system traits!")
     return ecdb

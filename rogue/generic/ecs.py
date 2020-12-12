@@ -72,6 +72,14 @@ def add_entity(
     return ecdb, entity
 
 
+def remove_entity(
+    *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity,
+) -> EntityComponentDatabase[ComponentTemplate]:
+    new_entities = ecdb._entities.remove(entity)  # pylint: disable=protected-access
+    ecdb = ecdb.set(_entities=new_entities)
+    return ecdb
+
+
 def add_component(
     *, ecdb: EntityComponentDatabase[ComponentTemplate], entity: Entity, component: ComponentTemplate
 ) -> EntityComponentDatabase[ComponentTemplate]:
