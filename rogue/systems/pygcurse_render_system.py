@@ -25,16 +25,20 @@ from rogue.components import (
     InventoryComponent,
     MoneyComponent,
     EquipmentComponent,
+    HealthComponent,
 )
 from rogue.systems.common.traits import NoReturnSystemTrait
 from rogue.types import TypeEnum, TYPE_ENUM_TO_STRING
 
+DEFAULT_COLOR = "grey"
 HERO_COLOR = "purple"
 ENEMY_COLOR = "red"
 WEAPON_COLOR = "green"
 GOLD_COLOR = "gold"
 POTION_COLOR = "blue"
-DEFAULT_COLOR = "grey"
+HEALTH_COLOR = "green"
+INVENTORY_COLOR = "purple"
+EQUIPMENT_COLOR = "red"
 
 
 EMPTY = " "
@@ -101,6 +105,7 @@ def _render_hero_info(
 ) -> None:
     x_offset = window.width - 30
     money_component = cast(MoneyComponent, get_component(ecdb=ecdb, entity=entity, component_type=MoneyComponent))
+    health_component = cast(HealthComponent, get_component(ecdb=ecdb, entity=entity, component_type=HealthComponent))
     inventory_component = cast(
         InventoryComponent, get_component(ecdb=ecdb, entity=entity, component_type=InventoryComponent)
     )
@@ -112,26 +117,29 @@ def _render_hero_info(
 
     line = 0
 
-    window.write(text=f"Gold: {money_component.amount}", x=x_offset, y=line, fgcolor=DEFAULT_COLOR)
+    window.write(text=f"Gold:   {money_component.amount}", x=x_offset, y=line, fgcolor=GOLD_COLOR)
     line += 1
 
-    window.write(text="Inventory:", x=x_offset, y=line, fgcolor=DEFAULT_COLOR)
+    window.write(text=f"Health: {health_component.amount}", x=x_offset, y=line, fgcolor=HEALTH_COLOR)
+    line += 1
+
+    window.write(text="Inventory:", x=x_offset, y=line, fgcolor=INVENTORY_COLOR)
     line += 1
 
     for item in inventory_component.entities:
         type_component = cast(TypeComponent, get_component(ecdb=ecdb, entity=item, component_type=TypeComponent))
         window.write(
-            text=f"    {TYPE_ENUM_TO_STRING[type_component.entity_type]}", x=x_offset, y=line, fgcolor=DEFAULT_COLOR
+            text=f"    {TYPE_ENUM_TO_STRING[type_component.entity_type]}", x=x_offset, y=line, fgcolor=INVENTORY_COLOR
         )
         line += 1
 
-    window.write(text="Equipment:", x=x_offset, y=line, fgcolor=DEFAULT_COLOR)
+    window.write(text="Equipment:", x=x_offset, y=line, fgcolor=EQUIPMENT_COLOR)
     line += 1
 
     for item in equipment_component.entities:
         type_component = cast(TypeComponent, get_component(ecdb=ecdb, entity=item, component_type=TypeComponent))
         window.write(
-            text=f"    {TYPE_ENUM_TO_STRING[type_component.entity_type]}", x=x_offset, y=line, fgcolor=DEFAULT_COLOR
+            text=f"    {TYPE_ENUM_TO_STRING[type_component.entity_type]}", x=x_offset, y=line, fgcolor=EQUIPMENT_COLOR
         )
         line += 1
 

@@ -21,6 +21,7 @@ from rogue.components import (
     InventoryComponent,
     EquipmentComponent,
     TypeComponent,
+    HealthComponent,
 )
 from rogue.systems.common.actions import (
     ActionUnion,
@@ -28,7 +29,7 @@ from rogue.systems.common.actions import (
 )
 from rogue.systems.common.traits import YieldChangesSystemTrait
 from rogue.exceptions import QuitGameException, IgnoreTimeStepException
-from rogue.types import WEAPON_TYPES
+from rogue.types import WEAPON_TYPES, TypeEnum
 
 
 def _get_hero_entity(*, ecdb: EntityComponentDatabase[ComponentUnion]) -> Entity:
@@ -37,7 +38,7 @@ def _get_hero_entity(*, ecdb: EntityComponentDatabase[ComponentUnion]) -> Entity
     return hero_entity
 
 
-def _equip_up_next_weapon(
+def _maybe_equip_next_weapon(
     *, ecdb: EntityComponentDatabase[ComponentUnion], entity: Entity
 ) -> Generator[ActionUnion, None, None]:
     inventory_component = cast(
@@ -74,6 +75,40 @@ def _equip_up_next_weapon(
     yield AddComponentAction(entity=entity, component=equipment_component)
 
 
+def _maybe_drink_potion(
+    *, ecdb: EntityComponentDatabase[ComponentUnion], entity: Entity
+) -> Generator[ActionUnion, None, None]:
+    inventory_component = cast(
+        InventoryComponent, get_component(ecdb=ecdb, entity=entity, component_type=InventoryComponent),
+    )
+
+    potion_entity: Entity
+    for potion_entity in inventory_component.entities:
+        if (
+            cast(
+                TypeComponent, get_component(ecdb=ecdb, entity=potion_entity, component_type=TypeComponent)
+            ).entity_type
+            == TypeEnum.Potion
+        ):
+            break
+    else:
+        return
+
+    health_component = cast(HealthComponent, get_component(ecdb=ecdb, entity=entity, component_type=HealthComponent))
+    potion_health_component = cast(
+        HealthComponent, get_component(ecdb=ecdb, entity=potion_entity, component_type=HealthComponent)
+    )
+    new_health_amount = health_component.amount + potion_health_component.amount
+    if new_health_amount > 100:
+        return
+
+    inventory_component = evolve(inventory_component, entities=inventory_component.entities.remove(potion_entity))
+    health_component = evolve(health_component, amount=new_health_amount)
+
+    yield AddComponentAction(entity=entity, component=inventory_component)
+    yield AddComponentAction(entity=entity, component=health_component)
+
+
 @attr.s(frozen=True, kw_only=True)
 class PygameHeroControlSystem(YieldChangesSystemTrait):
     @classmethod
@@ -104,7 +139,10 @@ class PygameHeroControlSystem(YieldChangesSystemTrait):
             elif event.key == pygame.K_DOWN:
                 hero_velocity_y = 1
             elif event.key == pygame.K_e:
-                yield from _equip_up_next_weapon(ecdb=ecdb, entity=hero_entity)
+                yield from _maybe_equip_next_weapon(ecdb=ecdb, entity=hero_entity)
+                return
+            elif event.key == pygame.K_p:
+                yield from _maybe_drink_potion(ecdb=ecdb, entity=hero_entity)
                 return
             elif event.key == pygame.K_ESCAPE:
                 pygame.quit()

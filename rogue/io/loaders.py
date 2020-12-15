@@ -80,6 +80,8 @@ def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path,) -> EntityCom
                 components.append(EquipmentComponent.create_from_attributes(entities=[]))
             elif entity_type == TypeEnum.Gold:
                 components.append(MoneyComponent.create_from_attributes(amount=item["amount"]))
+            elif entity_type == TypeEnum.Potion:
+                components.append(HealthComponent.create_from_attributes(amount=item["amount"]))
 
             ecdb, _ = add_entity(ecdb=ecdb, components=components)
 

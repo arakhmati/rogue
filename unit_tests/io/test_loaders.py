@@ -63,6 +63,7 @@ def test_load_rogue_ecdb_from_input_yaml(input_file_name=pathlib.Path("configs")
                     {
                         TypeComponent: TypeComponent.create_from_attributes(entity_type=TypeEnum.Potion),
                         PositionComponent: PositionComponent.create_from_attributes(y_axis=21, x_axis=24),
+                        HealthComponent: HealthComponent.create_from_attributes(amount=50),
                     }
                 ),
                 Entity(unique_id=5): pmap(

@@ -9,7 +9,7 @@
       coordinates: 7, 8
     - type: Potion
       coordinates: 6, 4
-      strengh: 50
+      amount: 50
     - type: Gold
       coordinates: 5, 3
       amount: 50
