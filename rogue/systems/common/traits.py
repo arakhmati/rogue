@@ -1,15 +1,9 @@
 import abc
-from typing import (
-    Tuple,
-    Generator,
-)
+from typing import Generator
 
 import attr
 
-from rogue.generic.ecs import (
-    EntityComponentDatabase,
-    Entity,
-)
+from rogue.generic.ecs import EntityComponentDatabase
 from rogue.components import ComponentUnion
 from rogue.systems.common.actions import ActionUnion
 
@@ -24,7 +18,5 @@ class NoReturnSystemTrait(abc.ABC):
 @attr.s(frozen=True, kw_only=True)
 class YieldChangesSystemTrait:
     @abc.abstractmethod
-    def __call__(
-        self, *, ecdb: EntityComponentDatabase[ComponentUnion]
-    ) -> Generator[Tuple[Entity, ActionUnion], None, None]:
+    def __call__(self, *, ecdb: EntityComponentDatabase[ComponentUnion]) -> Generator[ActionUnion, None, None]:
         ...

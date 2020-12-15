@@ -31,11 +31,11 @@ def process_system(
     if isinstance(system, NoReturnSystemTrait):
         system(ecdb=ecdb)
     elif isinstance(system, YieldChangesSystemTrait):
-        for entity, action in system(ecdb=ecdb):
+        for action in system(ecdb=ecdb):
             if isinstance(action, AddComponentAction):
-                ecdb = add_component(ecdb=ecdb, entity=entity, component=action.component)
+                ecdb = add_component(ecdb=ecdb, entity=action.entity, component=action.component)
             elif isinstance(action, RemoveComponentAction):
-                ecdb = remove_component(ecdb=ecdb, entity=entity, component_type=action.component_type)
+                ecdb = remove_component(ecdb=ecdb, entity=action.entity, component_type=action.component_type)
             elif isinstance(action, RemoveEntityAction):
                 ecdb = remove_entity(ecdb=ecdb, entity=action.entity)
             else:

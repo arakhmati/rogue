@@ -1,6 +1,5 @@
 from typing import (
     cast,
-    Tuple,
     Generator,
 )
 
@@ -40,7 +39,7 @@ def _get_hero_entity(*, ecdb: EntityComponentDatabase[ComponentUnion]) -> Entity
 
 def _equip_up_next_weapon(
     *, ecdb: EntityComponentDatabase[ComponentUnion], entity: Entity
-) -> Generator[Tuple[Entity, ActionUnion], None, None]:
+) -> Generator[ActionUnion, None, None]:
     inventory_component = cast(
         InventoryComponent, get_component(ecdb=ecdb, entity=entity, component_type=InventoryComponent),
     )
@@ -71,8 +70,8 @@ def _equip_up_next_weapon(
     inventory_component = evolve(inventory_component, entities=inventory_component.entities.remove(item_entity))
     equipment_component = evolve(equipment_component, entities=equipment_component.entities.add(item_entity))
 
-    yield entity, AddComponentAction(component=inventory_component)
-    yield entity, AddComponentAction(component=equipment_component)
+    yield AddComponentAction(entity=entity, component=inventory_component)
+    yield AddComponentAction(entity=entity, component=equipment_component)
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -81,9 +80,7 @@ class PygameHeroControlSystem(YieldChangesSystemTrait):
     def create(cls) -> "PygameHeroControlSystem":
         return cls()
 
-    def __call__(
-        self, *, ecdb: EntityComponentDatabase[ComponentUnion]
-    ) -> Generator[Tuple[Entity, ActionUnion], None, None]:
+    def __call__(self, *, ecdb: EntityComponentDatabase[ComponentUnion]) -> Generator[ActionUnion, None, None]:
 
         hero_entity = _get_hero_entity(ecdb=ecdb)
 
@@ -119,7 +116,7 @@ class PygameHeroControlSystem(YieldChangesSystemTrait):
                 velocity_component = VelocityComponent.create_from_attributes(
                     y_axis=hero_velocity_y, x_axis=hero_velocity_x
                 )
-                yield hero_entity, AddComponentAction(component=velocity_component)
+                yield AddComponentAction(entity=hero_entity, component=velocity_component)
                 return
 
         raise IgnoreTimeStepException

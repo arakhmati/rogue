@@ -1,7 +1,6 @@
 from typing import (
     cast,
     Optional,
-    Tuple,
     Generator,
     List,
     Type,
@@ -13,7 +12,6 @@ from rogue.generic.functions import evolve
 from rogue.generic.ecs import (
     EntityComponentDatabase,
     query_entities,
-    Entity,
 )
 from rogue.components import (
     ComponentUnion,
@@ -34,9 +32,7 @@ class MovementSystem(YieldChangesSystemTrait):
     def create(cls) -> "MovementSystem":
         return cls()
 
-    def __call__(
-        self, *, ecdb: EntityComponentDatabase[ComponentUnion]
-    ) -> Generator[Tuple[Entity, ActionUnion], None, None]:
+    def __call__(self, *, ecdb: EntityComponentDatabase[ComponentUnion]) -> Generator[ActionUnion, None, None]:
 
         component_types: List[Type[ComponentUnion]] = [PositionComponent, VelocityComponent]
         for entity, components in query_entities(ecdb=ecdb, component_types=component_types):
@@ -53,5 +49,5 @@ class MovementSystem(YieldChangesSystemTrait):
             x_axis = position_component.x_axis + velocity_component.x_axis
 
             new_position_component: PositionComponent = evolve(position_component, y_axis=y_axis, x_axis=x_axis)
-            yield entity, AddComponentAction(component=new_position_component)
-            yield entity, AddComponentAction(component=ZERO_VELOCITY_COMPONENT)
+            yield AddComponentAction(entity=entity, component=new_position_component)
+            yield AddComponentAction(entity=entity, component=ZERO_VELOCITY_COMPONENT)

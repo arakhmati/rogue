@@ -13,11 +13,13 @@ class RemoveEntityAction:
 
 @attr.s(frozen=True, kw_only=True)
 class AddComponentAction:
+    entity: Entity = attr.ib()
     component: ComponentUnion = attr.ib()
 
 
 @attr.s(frozen=True, kw_only=True)
 class RemoveComponentAction:
+    entity: Entity = attr.ib()
     component_type: Type[ComponentUnion] = attr.ib()
 
 

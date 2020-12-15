@@ -96,7 +96,7 @@ def _move_entity(*, grid: Grid, entity: Entity, coordinates: Coordinates, new_co
 
 def _pick_up_gold(
     *, ecdb: EntityComponentDatabase[ComponentUnion], entity: Entity, gold_entity: Entity
-) -> List[Tuple[Entity, ActionUnion]]:
+) -> List[ActionUnion]:
     gold_money_component = cast(
         MoneyComponent, get_component(ecdb=ecdb, entity=gold_entity, component_type=MoneyComponent),
     )
@@ -104,14 +104,14 @@ def _pick_up_gold(
 
     new_money_component = evolve(money_component, amount=money_component.amount + gold_money_component.amount)
     return [
-        (entity, AddComponentAction(component=new_money_component)),
-        (gold_entity, RemoveComponentAction(component_type=PositionComponent)),
+        AddComponentAction(entity=entity, component=new_money_component),
+        RemoveComponentAction(entity=gold_entity, component_type=PositionComponent),
     ]
 
 
 def _pick_up_item(
     *, ecdb: EntityComponentDatabase[ComponentUnion], entity: Entity, item_entity: Entity
-) -> List[Tuple[Entity, ActionUnion]]:
+) -> List[ActionUnion]:
     inventory_component = cast(
         InventoryComponent, get_component(ecdb=ecdb, entity=entity, component_type=InventoryComponent),
     )
@@ -119,8 +119,8 @@ def _pick_up_item(
     new_inventory_component = evolve(inventory_component, entities=inventory_component.entities.add(item_entity))
 
     return [
-        (entity, AddComponentAction(component=new_inventory_component)),
-        (item_entity, RemoveComponentAction(component_type=PositionComponent)),
+        AddComponentAction(entity=entity, component=new_inventory_component),
+        RemoveComponentAction(entity=item_entity, component_type=PositionComponent),
     ]
 
 
@@ -134,14 +134,14 @@ def _handle_item(
     item_entity: Entity,
     item_entity_type: TypeEnum,
     item_coordinates: Coordinates,
-) -> Tuple[Grid, List[Tuple[Entity, ActionUnion]]]:
-    actions: List[Tuple[Entity, ActionUnion]] = []
+) -> Tuple[Grid, List[ActionUnion]]:
+    actions: List[ActionUnion] = []
     if item_entity_type == TypeEnum.Gold:
         if entity_type == TypeEnum.Hero:
             actions.extend(_pick_up_gold(ecdb=ecdb, entity=entity, gold_entity=item_entity))
             grid = _move_entity(grid=grid, entity=entity, coordinates=coordinates, new_coordinates=item_coordinates)
         else:
-            actions.append((entity, AddComponentAction(component=ZERO_VELOCITY_COMPONENT)))
+            actions.append(AddComponentAction(entity=entity, component=ZERO_VELOCITY_COMPONENT))
     else:
         actions.extend(_pick_up_item(ecdb=ecdb, entity=entity, item_entity=item_entity))
         grid = _move_entity(grid=grid, entity=entity, coordinates=coordinates, new_coordinates=item_coordinates)
@@ -157,13 +157,13 @@ def _handle_enemy(
     coordinates: Coordinates,
     enemy_entity: Entity,
     enemy_coordinates: Coordinates,
-) -> Tuple[Grid, List[Tuple[Entity, ActionUnion]]]:
-    actions: List[Tuple[Entity, ActionUnion]] = []
+) -> Tuple[Grid, List[ActionUnion]]:
+    actions: List[ActionUnion] = []
     if entity_type == TypeEnum.Hero:
-        actions.append((entity, RemoveEntityAction(entity=enemy_entity)))
+        actions.append(RemoveEntityAction(entity=enemy_entity))
         grid = _move_entity(grid=grid, entity=entity, coordinates=coordinates, new_coordinates=enemy_coordinates)
     elif entity_type in ENEMY_TYPES:
-        actions.append((entity, AddComponentAction(component=ZERO_VELOCITY_COMPONENT)))
+        actions.append(AddComponentAction(entity=entity, component=ZERO_VELOCITY_COMPONENT))
     else:
         raise ValueError("Unrecognized case!")
     return grid, actions
@@ -171,7 +171,7 @@ def _handle_enemy(
 
 def _resolve_collisions(
     *, ecdb: EntityComponentDatabase[ComponentUnion], grid: Grid,
-) -> Generator[Tuple[Entity, ActionUnion], None, None]:
+) -> Generator[ActionUnion, None, None]:
 
     for coordinates in list(grid):
         entity = grid[coordinates]
@@ -215,7 +215,7 @@ def _resolve_collisions(
                 )
                 yield from actions
             else:
-                yield entity, AddComponentAction(component=ZERO_VELOCITY_COMPONENT)
+                yield AddComponentAction(entity=entity, component=ZERO_VELOCITY_COMPONENT)
         else:
             grid = _move_entity(grid=grid, entity=entity, coordinates=coordinates, new_coordinates=new_coordinates)
 
@@ -226,9 +226,7 @@ class CollisionDetectionSystem(YieldChangesSystemTrait):
     def create(cls) -> "CollisionDetectionSystem":
         return cls()
 
-    def __call__(
-        self, *, ecdb: EntityComponentDatabase[ComponentUnion]
-    ) -> Generator[Tuple[Entity, ActionUnion], None, None]:
+    def __call__(self, *, ecdb: EntityComponentDatabase[ComponentUnion]) -> Generator[ActionUnion, None, None]:
 
         grid = _populate_grid(ecdb=ecdb)
 
