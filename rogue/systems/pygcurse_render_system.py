@@ -24,6 +24,7 @@ from rogue.components import (
     SizeComponent,
     InventoryComponent,
     MoneyComponent,
+    EquipmentComponent,
 )
 from rogue.systems.common.traits import NoReturnSystemTrait
 from rogue.types import TypeEnum, TYPE_ENUM_TO_STRING
@@ -103,8 +104,11 @@ def _render_hero_info(
     inventory_component = cast(
         InventoryComponent, get_component(ecdb=ecdb, entity=entity, component_type=InventoryComponent)
     )
+    equipment_component = cast(
+        EquipmentComponent, get_component(ecdb=ecdb, entity=entity, component_type=EquipmentComponent)
+    )
 
-    window.fill(char=EMPTY, region=(x_offset, 0, window.width, 2 + len(inventory_component.entities)))
+    window.fill(char=EMPTY, region=(x_offset, 0, window.width, 25))
 
     line = 0
 
@@ -122,6 +126,14 @@ def _render_hero_info(
         line += 1
 
     window.write(text="Equipment:", x=x_offset, y=line, fgcolor=DEFAULT_COLOR)
+    line += 1
+
+    for item in equipment_component.entities:
+        type_component = cast(TypeComponent, get_component(ecdb=ecdb, entity=item, component_type=TypeComponent))
+        window.write(
+            text=f"    {TYPE_ENUM_TO_STRING[type_component.entity_type]}", x=x_offset, y=line, fgcolor=DEFAULT_COLOR
+        )
+        line += 1
 
 
 @attr.s(frozen=True, kw_only=True)
