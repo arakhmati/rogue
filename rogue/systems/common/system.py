@@ -18,10 +18,16 @@ from rogue.systems.enemy_ai_system import EnemyAISystem
 from rogue.systems.movement_system import MovementSystem
 from rogue.systems.pygame_hero_control_system import PygameHeroControlSystem
 from rogue.systems.pygcurse_render_system import PygcurseRenderSystem
-from .traits import NoReturnSystemTrait, YieldChangesSystemTrait
+from rogue.systems.pynput_hero_control_system import PynputHeroControlSystem
+from rogue.systems.common.traits import NoReturnSystemTrait, YieldChangesSystemTrait
 
 SystemUnion = Union[
-    PygcurseRenderSystem, MovementSystem, EnemyAISystem, PygameHeroControlSystem, CollisionDetectionSystem
+    PygcurseRenderSystem,
+    MovementSystem,
+    EnemyAISystem,
+    PygameHeroControlSystem,
+    CollisionDetectionSystem,
+    PynputHeroControlSystem,
 ]
 
 
