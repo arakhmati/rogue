@@ -5,6 +5,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Tuple,
 )
 
 from loguru import logger
@@ -33,19 +34,39 @@ def _load_room_config(*, input_file_name: pathlib.Path) -> RoomConfig:
     return room_config
 
 
-def _parse_coordinates(coordinates: str, y_axis: int = 0, x_axis: int = 0) -> Dict[str, int]:
-    parsed_y, parsed_x = (int(number) for number in coordinates.split(","))
-    parsed_y += y_axis
-    parsed_x += x_axis
-    return {"y_axis": parsed_y, "x_axis": parsed_x}
+def _parse_coordinates(*, coordinates: str) -> Tuple[int, int]:
+    y_axis, x_axis = (int(number) for number in coordinates.split(","))
+    return y_axis, x_axis
 
 
-def _parse_size(size: str) -> Dict[str, int]:
+def _parse_room_coordinates(*, coordinates: str) -> Dict[str, int]:
+    y_axis, x_axis = _parse_coordinates(coordinates=coordinates)
+    return {"y_axis": y_axis, "x_axis": x_axis}
+
+
+def _parse_entity_coordinates(
+    *, coordinates: str, entity_type: TypeEnum, room_height: int, room_width: int, room_y_axis: int, room_x_axis: int
+) -> Dict[str, int]:
+    parsed_y_axis, parsed_x_axis = _parse_coordinates(coordinates=coordinates)
+
+    if entity_type == TypeEnum.Door:
+        assert parsed_y_axis == 0 or parsed_y_axis == room_height or parsed_x_axis == 0 or parsed_x_axis == room_width
+    else:
+        assert 0 < parsed_y_axis < room_height
+        assert 0 < parsed_x_axis < room_width
+
+    y_axis = parsed_y_axis + room_y_axis
+    x_axis = parsed_x_axis + room_x_axis
+
+    return {"y_axis": y_axis, "x_axis": x_axis}
+
+
+def _parse_size(*, size: str) -> Dict[str, int]:
     height, width = (int(number) for number in size.split(","))
     return {"height": height, "width": width}
 
 
-def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path,) -> EntityComponentDatabase[ComponentUnion]:
+def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path) -> EntityComponentDatabase[ComponentUnion]:
 
     logger.info(f"Input file: {input_file_name}")
 
@@ -54,17 +75,26 @@ def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path,) -> EntityCom
 
     ecdb: EntityComponentDatabase[ComponentUnion] = create_ecdb()
     for room in room_config:
-        room_coordinates = _parse_coordinates(room["coordinates"])
+        room_coordinates = _parse_room_coordinates(coordinates=room["coordinates"])
+        room_size = _parse_size(size=room["size"])
         room_components: List[ComponentUnion] = [
             PositionComponent.create_from_attributes(**room_coordinates),
-            SizeComponent.create_from_attributes(**_parse_size(room["size"])),
+            SizeComponent.create_from_attributes(**room_size),
             TypeComponent.create_from_attributes(entity_type=TypeEnum.Room),
         ]
         ecdb, _ = add_entity(ecdb=ecdb, components=room_components)
         for item in room["items"]:
             entity_type = STRING_TO_TYPE_ENUM[item["type"]]
+            entity_coordinates = _parse_entity_coordinates(
+                coordinates=item["coordinates"],
+                entity_type=entity_type,
+                room_height=room_size["height"],
+                room_width=room_size["width"],
+                room_y_axis=room_coordinates["y_axis"],
+                room_x_axis=room_coordinates["x_axis"],
+            )
             components: List[ComponentUnion] = [
-                PositionComponent.create_from_attributes(**_parse_coordinates(item["coordinates"], **room_coordinates)),
+                PositionComponent.create_from_attributes(**entity_coordinates),
                 TypeComponent.create_from_attributes(entity_type=entity_type),
             ]
             if entity_type == TypeEnum.Hero:
