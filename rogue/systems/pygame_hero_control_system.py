@@ -1,7 +1,9 @@
 from typing import (
     cast,
     Generator,
+    Deque,
 )
+from collections import deque
 
 import attr
 import pygame
@@ -109,17 +111,24 @@ def _maybe_drink_potion(
     yield AddComponentAction(entity=entity, component=health_component)
 
 
-@attr.s(frozen=True, kw_only=True)
+@attr.s(frozen=True, kw_only=True, hash=False, cmp=False)
 class PygameHeroControlSystem(YieldChangesSystemTrait):
+    events: Deque[pygame.event.Event] = attr.ib(default=deque())
+
     @classmethod
     def create(cls) -> "PygameHeroControlSystem":
         return cls()
+
+    def __hash__(self) -> int:
+        return 0
 
     def __call__(self, *, ecdb: EntityComponentDatabase[ComponentUnion]) -> Generator[ActionUnion, None, None]:
 
         hero_entity = _get_hero_entity(ecdb=ecdb)
 
-        for event in pygame.event.get():
+        self.events.extend(pygame.event.get())
+        while len(self.events) > 0:
+            event = self.events.popleft()
 
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -156,5 +165,3 @@ class PygameHeroControlSystem(YieldChangesSystemTrait):
                 )
                 yield AddComponentAction(entity=hero_entity, component=velocity_component)
                 return
-
-        raise IgnoreTimeStepException
