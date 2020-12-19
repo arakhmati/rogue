@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Generator
 
 from rogue.generic.ecs import (
     EntityComponentDatabase,
@@ -8,6 +8,7 @@ from rogue.generic.ecs import (
 )
 from rogue.components import ComponentUnion
 from rogue.systems.common.actions import (
+    ActionUnion,
     RemoveEntityAction,
     AddComponentAction,
     RemoveComponentAction,
@@ -31,21 +32,26 @@ SystemUnion = Union[
 ]
 
 
-def process_system(
-    *, system: SystemUnion, ecdb: EntityComponentDatabase[ComponentUnion]
+def process_action(
+    ecdb: EntityComponentDatabase[ComponentUnion], action: ActionUnion
 ) -> EntityComponentDatabase[ComponentUnion]:
+    if isinstance(action, AddComponentAction):
+        ecdb = add_component(ecdb=ecdb, entity=action.entity, component=action.component)
+    elif isinstance(action, RemoveComponentAction):
+        ecdb = remove_component(ecdb=ecdb, entity=action.entity, component_type=action.component_type)
+    elif isinstance(action, RemoveEntityAction):
+        ecdb = remove_entity(ecdb=ecdb, entity=action.entity)
+    else:
+        raise ValueError(f"Unrecognized Action: {action}")
+    return ecdb
+
+
+def process_system(
+    *, ecdb: EntityComponentDatabase[ComponentUnion], system: SystemUnion,
+) -> Generator[ActionUnion, None, None]:
     if isinstance(system, NoReturnSystemTrait):
         system(ecdb=ecdb)
     elif isinstance(system, YieldChangesSystemTrait):
-        for action in system(ecdb=ecdb):
-            if isinstance(action, AddComponentAction):
-                ecdb = add_component(ecdb=ecdb, entity=action.entity, component=action.component)
-            elif isinstance(action, RemoveComponentAction):
-                ecdb = remove_component(ecdb=ecdb, entity=action.entity, component_type=action.component_type)
-            elif isinstance(action, RemoveEntityAction):
-                ecdb = remove_entity(ecdb=ecdb, entity=action.entity)
-            else:
-                raise ValueError(f"Unrecognized Action: {action}")
+        yield from system(ecdb=ecdb)
     else:
         raise ValueError(f"System of type {type(system)} does not support any of the system traits!")
-    return ecdb

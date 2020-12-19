@@ -165,16 +165,15 @@ def add_system(
     assert priority >= 0, "Priority must be a positive number!"
 
     priority_to_systems = systems._priority_to_systems  # pylint: disable=protected-access
-    systems_with_given_priority = priority_to_systems.get(priority, pyrsistent.pset())
-    new_systems_with_given_priority = systems_with_given_priority.add(system)
-    new_priority_to_systems = priority_to_systems.set(priority, new_systems_with_given_priority)
+    systems_with_same_priority = priority_to_systems.get(priority, pyrsistent.pset())
+    new_systems_with_same_priority = systems_with_same_priority.add(system)
+    new_priority_to_systems = priority_to_systems.set(priority, new_systems_with_same_priority)
     return systems.set(_priority_to_systems=new_priority_to_systems)
 
 
-def get_systems(*, systems: Systems[SystemTemplate]) -> Generator[SystemTemplate, None, None]:
-    for _, systems_with_given_priority in systems._priority_to_systems.items():  # pylint: disable=protected-access
-        for system in systems_with_given_priority:
-            yield system
+def get_systems_by_priority(*, systems: Systems[SystemTemplate]) -> Generator[SetOfSystems[SystemTemplate], None, None]:
+    for _, systems_with_same_priority in systems._priority_to_systems.items():  # pylint: disable=protected-access
+        yield systems_with_same_priority
 
 
 # class ProcessSystemFunction(Protocol):
@@ -186,8 +185,24 @@ def get_systems(*, systems: Systems[SystemTemplate]) -> Generator[SystemTemplate
 
 # TODO: use protocol above
 class ProcessSystemFunction(Protocol):
-    def __call__(self, *, system: Any, ecdb: Any) -> Any:
+    def __call__(self, *, ecdb: Any, system: Any) -> Any:
         ...
+
+
+# TODO: Don't use Any
+class ProcessActionFunction(Protocol):
+    def __call__(self, *, ecdb: Any, action: Any) -> Any:
+        ...
+
+
+def _get_actions_from_systems_with_same_priority(
+    *,
+    ecdb: EntityComponentDatabase[ComponentTemplate],
+    systems_with_same_priority: SetOfSystems[SystemTemplate],
+    process_system: ProcessSystemFunction,
+) -> Generator[Any, None, None]:
+    for system in systems_with_same_priority:
+        yield from process_system(ecdb=ecdb, system=system)
 
 
 def process_systems(
@@ -195,9 +210,15 @@ def process_systems(
     ecdb: EntityComponentDatabase[ComponentTemplate],
     systems: Systems[SystemTemplate],
     process_system: ProcessSystemFunction,
+    process_action: ProcessActionFunction,
 ) -> EntityComponentDatabase[ComponentTemplate]:
-    for system in get_systems(systems=systems):
-        ecdb = process_system(system=system, ecdb=ecdb)
+    for systems_with_same_priority in get_systems_by_priority(systems=systems):
+        actions = _get_actions_from_systems_with_same_priority(
+            ecdb=ecdb, systems_with_same_priority=systems_with_same_priority, process_system=process_system,
+        )
+
+        for action in actions:
+            ecdb = process_action(ecdb=ecdb, action=action)
     return ecdb
 
 

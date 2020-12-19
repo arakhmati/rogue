@@ -7,6 +7,7 @@ from rogue.generic.ecs import Systems, create_systems, add_system, process_syste
 from rogue.systems import (
     SystemUnion,
     process_system,
+    process_action,
     PygcurseRenderSystem,
     MovementSystem,
     EnemyAISystem,
@@ -38,7 +39,9 @@ def rogue_pygcurse(*, input_file_name: pathlib.Path, window_height: int, window_
 
     while True:
         try:
-            ecdb = process_systems(ecdb=ecdb, systems=systems, process_system=process_system)
+            ecdb = process_systems(
+                ecdb=ecdb, systems=systems, process_system=process_system, process_action=process_action
+            )
         except QuitGameException:
             return
         except IgnoreTimeStepException:

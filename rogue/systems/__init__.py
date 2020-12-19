@@ -1,4 +1,4 @@
-from rogue.systems.common.system import SystemUnion, process_system
+from rogue.systems.common.system import SystemUnion, process_system, process_action
 from .collision_detection_system import CollisionDetectionSystem
 from .enemy_ai_system import EnemyAISystem
 from .movement_system import MovementSystem
