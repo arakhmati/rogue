@@ -20,7 +20,7 @@ from rogue.exceptions import QuitGameException, IgnoreTimeStepException
 def create_rogue_systems(*, window_height: int, window_width: int) -> Tuple[Systems[SystemUnion], PygcurseRenderSystem]:
 
     systems: Systems[SystemUnion] = create_systems()
-    systems = add_system(systems=systems, priority=0, system=PynputHeroControlSystem.create())
+    systems = add_system(systems=systems, priority=0, system=PynputHeroControlSystem.create(upwards=-1, downwards=1))
     systems = add_system(systems=systems, priority=0, system=EnemyAISystem.create())
     systems = add_system(systems=systems, priority=1, system=CollisionDetectionSystem.create())
     systems = add_system(systems=systems, priority=2, system=MovementSystem.create())
