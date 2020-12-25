@@ -20,6 +20,7 @@ from rogue.systems.movement_system import MovementSystem
 from rogue.systems.pygame_hero_control_system import PygameHeroControlSystem
 from rogue.systems.pygcurse_render_system import PygcurseRenderSystem
 from rogue.systems.pynput_hero_control_system import PynputHeroControlSystem
+from rogue.systems.panda3d_render_system import Panda3dRenderSystem
 from rogue.systems.common.traits import NoReturnSystemTrait, YieldChangesSystemTrait
 
 SystemUnion = Union[
@@ -29,6 +30,7 @@ SystemUnion = Union[
     PygameHeroControlSystem,
     CollisionDetectionSystem,
     PynputHeroControlSystem,
+    Panda3dRenderSystem,
 ]
 
 

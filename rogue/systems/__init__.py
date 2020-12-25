@@ -4,4 +4,5 @@ from .enemy_ai_system import EnemyAISystem
 from .movement_system import MovementSystem
 from .pygame_hero_control_system import PygameHeroControlSystem
 from .pygcurse_render_system import PygcurseRenderSystem
+from .panda3d_render_system import Panda3dRenderSystem
 from .pynput_hero_control_system import PynputHeroControlSystem

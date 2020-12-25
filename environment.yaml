@@ -8,6 +8,7 @@ dependencies:
   - flake8=3.7.9
   - loguru=0.5.3
   - mypy=0.750
+  - panda3d=1.10.7
   - pip
   - progressbar=2.5
   - pudb=2019.
