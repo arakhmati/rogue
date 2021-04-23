@@ -21,8 +21,7 @@ def _is_of_type(
     if not isinstance(queried_entity_type, pyrsistent.PSet):
         queried_entity_type = pyrsistent.s(queried_entity_type)
 
-    cast_components = cast(MapFromComponentTypeToOptionalComponent[ComponentUnion], components)
-    entity_type_component = cast_components[TypeComponent]
+    entity_type_component = components[TypeComponent]
 
     actual_entity_type = cast(TypeComponent, entity_type_component).entity_type
 

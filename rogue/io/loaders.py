@@ -66,6 +66,26 @@ def _parse_size(*, size: str) -> Dict[str, int]:
     return {"height": height, "width": width}
 
 
+def _load_entity_specific_components(entity_type: TypeEnum, item: Dict[str, Any]) -> List[ComponentUnion]:
+    components: List[ComponentUnion] = []
+    if entity_type == TypeEnum.Hero:
+        components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
+        components.append(HealthComponent.create_from_attributes(amount=100))
+        components.append(MoneyComponent.create_from_attributes(amount=0))
+        components.append(InventoryComponent.create_from_attributes(entities=[]))
+        components.append(EquipmentComponent.create_from_attributes(entities=[]))
+    elif entity_type in ENEMY_TYPES:
+        components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
+        components.append(HealthComponent.create_from_attributes(amount=100))
+        components.append(InventoryComponent.create_from_attributes(entities=[]))
+        components.append(EquipmentComponent.create_from_attributes(entities=[]))
+    elif entity_type == TypeEnum.Gold:
+        components.append(MoneyComponent.create_from_attributes(amount=item["amount"]))
+    elif entity_type == TypeEnum.Potion:
+        components.append(HealthComponent.create_from_attributes(amount=item["amount"]))
+    return components
+
+
 def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path) -> EntityComponentDatabase[ComponentUnion]:
 
     logger.info(f"Input file: {input_file_name}")
@@ -97,21 +117,9 @@ def load_rogue_ecdb_from_input_yaml(input_file_name: pathlib.Path) -> EntityComp
                 PositionComponent.create_from_attributes(**entity_coordinates),
                 TypeComponent.create_from_attributes(entity_type=entity_type),
             ]
-            if entity_type == TypeEnum.Hero:
-                components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
-                components.append(HealthComponent.create_from_attributes(amount=100))
-                components.append(MoneyComponent.create_from_attributes(amount=0))
-                components.append(InventoryComponent.create_from_attributes(entities=[]))
-                components.append(EquipmentComponent.create_from_attributes(entities=[]))
-            elif entity_type in ENEMY_TYPES:
-                components.append(VelocityComponent.create_from_attributes(y_axis=0, x_axis=0))
-                components.append(HealthComponent.create_from_attributes(amount=100))
-                components.append(InventoryComponent.create_from_attributes(entities=[]))
-                components.append(EquipmentComponent.create_from_attributes(entities=[]))
-            elif entity_type == TypeEnum.Gold:
-                components.append(MoneyComponent.create_from_attributes(amount=item["amount"]))
-            elif entity_type == TypeEnum.Potion:
-                components.append(HealthComponent.create_from_attributes(amount=item["amount"]))
+
+            entity_specific_components = _load_entity_specific_components(entity_type=entity_type, item=item)
+            components.extend(entity_specific_components)
 
             ecdb, _ = add_entity(ecdb=ecdb, components=components)
 

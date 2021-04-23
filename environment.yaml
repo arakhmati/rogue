@@ -6,6 +6,7 @@ dependencies:
   - click=7.1.1
   - cytoolz=0.10.1
   - flake8=3.7.9
+  - libffi=3.2.1
   - loguru=0.5.3
   - mypy=0.750
   - panda3d=1.10.7
@@ -27,3 +28,4 @@ dependencies:
       - flake8-mypy==17.8.0
       - pygame==2.0.0
       - pygcurse==0.10.2
+      - git+https://github.com/arakhmat/ecs
