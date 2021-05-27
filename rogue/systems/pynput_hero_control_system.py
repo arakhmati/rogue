@@ -35,7 +35,8 @@ class PynputHeroControlSystem(YieldChangesSystemTrait):
         hero_entity = get_hero_entity(ecdb=ecdb)
 
         with keyboard.Events() as events:
-            event = events.get(timeout=0.25)
+            event = events.get(timeout=self.timeout)
+            print(event)
             if isinstance(event, keyboard.Events.Press):
 
                 hero_velocity_y, hero_velocity_x = 0, 0
@@ -51,10 +52,10 @@ class PynputHeroControlSystem(YieldChangesSystemTrait):
                     hero_velocity_y = self.upwards
                 elif event.key == keyboard.Key.down:
                     hero_velocity_y = self.downwards
-                elif event.key == event.key.from_char("e"):
+                elif event.key == keyboard.KeyCode.from_char("e"):
                     yield from maybe_equip_next_weapon(ecdb=ecdb, entity=hero_entity)
                     return
-                elif event.key == event.key.from_char("p"):
+                elif event.key == keyboard.KeyCode.from_char("p"):
                     yield from maybe_drink_potion(ecdb=ecdb, entity=hero_entity)
                     return
                 else:

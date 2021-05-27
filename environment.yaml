@@ -1,18 +1,23 @@
 name: rogue
 channels:
+  - anaconda
   - conda-forge
 dependencies:
+  - attrs=19.1.0
   - black=19.10
+  - boost=1.73.0
+  - catch2=2.13.6
+  - clang=12.0.0
   - click=7.1.1
+  - cmake=3.19.6
   - cytoolz=0.10.1
   - flake8=3.7.9
-  - libffi=3.2.1
   - loguru=0.5.3
   - mypy=0.750
-  - panda3d=1.10.7
+#  - panda3d=1.10.9 TODO: re-enable
   - pip
   - progressbar=2.5
-  - pudb=2019.
+  - pudb=2019.2
   - pylint=2.4.4
   - pynput=1.7.1
   - pyrsistent=0.17.3

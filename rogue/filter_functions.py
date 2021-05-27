@@ -8,13 +8,13 @@ from typing import cast, Union
 import pyrsistent
 from pyrsistent.typing import PSet
 
-from rogue.generic.ecs import ComponentTemplate, MapFromComponentTypeToOptionalComponent
-from rogue.components import TypeComponent, ComponentUnion
+from rogue.generic.ecs import ComponentTemplate, MapFromComponentTypeToComponent
+from rogue.components import TypeComponent
 from rogue.types import TypeEnum, ENEMY_TYPES
 
 
 def _is_of_type(
-    components: MapFromComponentTypeToOptionalComponent[ComponentTemplate],
+    components: MapFromComponentTypeToComponent[ComponentTemplate],
     queried_entity_type: Union[TypeEnum, PSet[TypeEnum]],
 ) -> bool:
 
@@ -28,9 +28,9 @@ def _is_of_type(
     return actual_entity_type in queried_entity_type
 
 
-def is_hero(components: MapFromComponentTypeToOptionalComponent[ComponentTemplate]) -> bool:
+def is_hero(components: MapFromComponentTypeToComponent[ComponentTemplate]) -> bool:
     return _is_of_type(components=components, queried_entity_type=TypeEnum.Hero)
 
 
-def is_enemy(components: MapFromComponentTypeToOptionalComponent[ComponentTemplate]) -> bool:
+def is_enemy(components: MapFromComponentTypeToComponent[ComponentTemplate]) -> bool:
     return _is_of_type(components=components, queried_entity_type=ENEMY_TYPES)

@@ -8,7 +8,7 @@ from toolz import first
 from rogue.filter_functions import is_hero
 from rogue.generic.ecs import (
     EntityComponentDatabase,
-    query_entities,
+    query,
     Entity,
     get_component,
 )
@@ -29,7 +29,7 @@ from rogue.types import WEAPON_TYPES, TypeEnum
 
 def get_hero_entity(*, ecdb: EntityComponentDatabase[ComponentUnion]) -> Entity:
     hero_entity: Entity
-    hero_entity, _ = first(query_entities(ecdb=ecdb, filter_function=is_hero))
+    hero_entity, _ = first(query(ecdb=ecdb, filter_function=is_hero))
     return hero_entity
 
 

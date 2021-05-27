@@ -6,7 +6,7 @@ import attr
 from rogue.filter_functions import is_enemy
 from rogue.generic.ecs import (
     EntityComponentDatabase,
-    query_entities,
+    query,
 )
 from rogue.components import (
     ComponentUnion,
@@ -33,7 +33,7 @@ class EnemyAISystem(YieldChangesSystemTrait):
     }
 
     def __call__(self, *, ecdb: EntityComponentDatabase[ComponentUnion]) -> Generator[ActionUnion, None, None]:
-        for entity, _ in query_entities(ecdb=ecdb, filter_function=is_enemy):
+        for entity, _ in query(ecdb=ecdb, filter_function=is_enemy):
             random_value = random.randint(0, len(EnemyAISystem.RANDOM_VALUE_TO_YX) - 1)
             y_axis, x_axis = EnemyAISystem.RANDOM_VALUE_TO_YX[random_value]
 

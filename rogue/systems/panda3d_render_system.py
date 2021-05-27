@@ -2,7 +2,6 @@ from collections import deque
 import itertools
 from pathlib import Path
 from typing import (
-    cast,
     Dict,
     Optional,
     Tuple,
@@ -12,14 +11,22 @@ from typing import (
 )
 
 import attr
-from direct.gui.OnscreenText import OnscreenText
-from direct.showbase.ShowBase import ShowBase, Loader
-from panda3d.core import LPoint3, NodePath
+
+try:
+    from direct.gui.OnscreenText import OnscreenText
+    from direct.showbase.ShowBase import ShowBase, Loader
+    from panda3d.core import LPoint3, NodePath
+except ImportError:
+
+    class ShowBase:  # type: ignore
+        ...
+
 
 from rogue.generic.ecs import (
     EntityComponentDatabase,
-    query_entities,
     Entity,
+    query,
+    get_component,
 )
 from rogue.components import (
     ComponentUnion,
@@ -33,10 +40,13 @@ from rogue.types import TypeEnum
 from rogue.assets import get_full_path_to_asset
 
 # define types for global variables used by panda3d
-base: ShowBase
-camera: NodePath
-render: NodePath
-loader: Loader
+try:
+    base: ShowBase
+    camera: NodePath
+    render: NodePath
+    loader: Loader
+except NameError:
+    ...
 
 RgbaColor = Tuple[int, int, int, int]
 
@@ -153,7 +163,7 @@ def _render_room(
 
 
 # Function for getting the proper position for a given square
-def get_square_position(*, y_axis: int, x_axis: int) -> LPoint3:
+def get_square_position(*, y_axis: int, x_axis: int) -> "LPoint3":
     return LPoint3(x_axis, y_axis, 0)
 
 
@@ -183,21 +193,15 @@ class PandaApp(ShowBase):  # type: ignore
 
         dynamic_entities: Deque[Tuple[Entity, PositionComponent, TypeComponent]] = deque(maxlen=None)
 
-        component_types: List[Type[ComponentUnion]] = [PositionComponent, SizeComponent, TypeComponent]
-        for entity, components in query_entities(ecdb=ecdb, component_types=component_types):
-            position_component = cast(Optional[PositionComponent], components[PositionComponent])
-            size_component = cast(Optional[SizeComponent], components[SizeComponent])
-            type_component = cast(TypeComponent, components[TypeComponent])
-
-            if position_component is None:
-                continue
+        component_types: List[Type[ComponentUnion]] = [PositionComponent, TypeComponent]
+        for entity, (position_component, type_component) in query(ecdb=ecdb, component_types=component_types):
+            size_component = get_component(ecdb=ecdb, entity=entity, component_types=SizeComponent)
 
             # Visualize rooms
             if size_component is not None:
                 _render_room(squares=self.squares, position_component=position_component, size_component=size_component)
-
-            # Defer dynamic entities to make sure all static ones already rendered
-            if size_component is None:
+            else:
+                # Defer dynamic entities to make sure all static ones already rendered
                 dynamic_entities.append((entity, position_component, type_component))
 
         # Visualize dynamic entities

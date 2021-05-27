@@ -1,7 +1,6 @@
 from collections import deque
 from typing import (
     cast,
-    Optional,
     Tuple,
     List,
     Type,
@@ -14,7 +13,7 @@ import pygcurse
 from rogue.generic.ecs import (
     EntityComponentDatabase,
     get_component,
-    query_entities,
+    query,
     Entity,
 )
 from rogue.components import (
@@ -157,21 +156,15 @@ class PygcurseRenderSystem(NoReturnSystemTrait):
 
         dynamic_entities: Deque[Tuple[Entity, PositionComponent, TypeComponent]] = deque(maxlen=None)
 
-        component_types: List[Type[ComponentUnion]] = [PositionComponent, SizeComponent, TypeComponent]
-        for entity, components in query_entities(ecdb=ecdb, component_types=component_types):
-            position_component = cast(Optional[PositionComponent], components[PositionComponent])
-            size_component = cast(Optional[SizeComponent], components[SizeComponent])
-            type_component = cast(TypeComponent, components[TypeComponent])
-
-            if position_component is None:
-                continue
+        component_types: List[Type[ComponentUnion]] = [PositionComponent, TypeComponent]
+        for entity, (position_component, type_component) in query(ecdb=ecdb, component_types=component_types):
+            size_component = get_component(ecdb=ecdb, entity=entity, component_type=SizeComponent)
 
             # Visualize rooms
             if size_component is not None:
                 _render_room(window=self.window, position_component=position_component, size_component=size_component)
-
-            # Defer dynamic entities to make sure all static ones already rendered
-            if size_component is None:
+            else:
+                # Defer dynamic entities to make sure all static ones already rendered
                 dynamic_entities.append((entity, position_component, type_component))
 
         # Visualize dynamic entities

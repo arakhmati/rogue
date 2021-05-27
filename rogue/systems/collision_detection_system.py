@@ -15,7 +15,7 @@ from rogue.generic.functions import evolve
 from rogue.generic.ecs import (
     EntityComponentDatabase,
     get_component,
-    query_entities,
+    query,
     Entity,
 )
 from rogue.components import (
@@ -72,18 +72,14 @@ def _populate_grid(*, ecdb: EntityComponentDatabase[ComponentUnion]) -> Grid:
 
     component_types: List[Type[ComponentUnion]] = [
         PositionComponent,
-        SizeComponent,
     ]
-    for entity, components in query_entities(ecdb=ecdb, component_types=component_types):
-        position_component = cast(Optional[PositionComponent], components[PositionComponent])
-        size_component = cast(Optional[SizeComponent], components[SizeComponent])
-
-        if position_component is None:
-            continue
+    for entity, (position_component,) in query(ecdb=ecdb, component_types=component_types):
+        size_component = get_component(ecdb=ecdb, entity=entity, component_type=SizeComponent)
 
         grid = _populate_grid_entity(
             grid=grid, entity=entity, position_component=position_component, size_component=size_component,
         )
+    print(grid)
 
     return grid
 
