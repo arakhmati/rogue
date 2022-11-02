@@ -1,11 +1,11 @@
-[![Build Status](https://travis-ci.com/arakhmat/rogue.svg?branch=master)](https://travis-ci.com/arakhmat/rogue)
+[![Build Status](https://travis-ci.com/arakhmati/rogue.svg?branch=master)](https://travis-ci.com/arakhmat/rogue)
 
 # Rogue
 Implementation of rogue using persistent data structures and entity component system
 
 ## Installation
 ```bash
-git clone https://github.com/arakhmat/rogue
+git clone https://github.com/arakhmati/rogue
 cd rogue
 conda env create -f environment.yaml
 conda activate rogue

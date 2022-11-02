@@ -33,4 +33,4 @@ dependencies:
       - flake8-mypy==17.8.0
       - pygame==2.0.0
       - pygcurse==0.10.2
-      - git+https://github.com/arakhmat/ecs
+      - git+https://github.com/arakhmati/ecs
